@@ -12,45 +12,34 @@ mod tests {
     fn board_creation_works(){
         use super::board::Board;
 
-        let mut board = Board{
-            width: 4,
-            height: 4,
-            tiles: super::board::create_tiles(4, 4)
-        };
+        for w in 0..super::board::MAX_WIDTH {
+            for h in 0..super::board::MAX_HEIGHT {
+                let mut board = Board{
+                    width: w,
+                    height: h,
+                    tiles: super::board::create_tiles(w, h)
+                };
 
-        board.set_tile(0, 0, 1);
-        board.set_tile(1, 0, 2);
-        board.set_tile(2, 0, 3);
-        board.set_tile(3, 0, 4);
-        board.set_tile(0, 1, 5);
-        board.set_tile(1, 1, 6);
-        board.set_tile(2, 1, 7);
-        board.set_tile(3, 1, 8);
-        board.set_tile(0, 2, 9);
-        board.set_tile(1, 2, 10);
-        board.set_tile(2, 2, 11);
-        board.set_tile(3, 2, 12);
-        board.set_tile(0, 3, 13);
-        board.set_tile(1, 3, 14);
-        board.set_tile(2, 3, 15);
-        board.set_tile(3, 3, 16);
+                let mut index = 0;
+                for x in 0..w {
+                    for y in 0..h {
+                        board.set_tile(x, y, index);
+                        index += 1;
+                    }
+                }
 
-        assert_eq!(board.tiles[0][0].unwrap().value, 1);
-        assert_eq!(board.tiles[0][1].unwrap().value, 2);
-        assert_eq!(board.tiles[0][2].unwrap().value, 3);
-        assert_eq!(board.tiles[0][3].unwrap().value, 4);
-        assert_eq!(board.tiles[1][0].unwrap().value, 5);
-        assert_eq!(board.tiles[1][1].unwrap().value, 6);
-        assert_eq!(board.tiles[1][2].unwrap().value, 7);
-        assert_eq!(board.tiles[1][3].unwrap().value, 8);
-        assert_eq!(board.tiles[2][0].unwrap().value, 9);
-        assert_eq!(board.tiles[2][1].unwrap().value, 10);
-        assert_eq!(board.tiles[2][2].unwrap().value, 11);
-        assert_eq!(board.tiles[2][3].unwrap().value, 12);
-        assert_eq!(board.tiles[3][0].unwrap().value, 13);
-        assert_eq!(board.tiles[3][1].unwrap().value, 14);
-        assert_eq!(board.tiles[3][2].unwrap().value, 15);
-        assert_eq!(board.tiles[3][3].unwrap().value, 16);
+                println!("w:{} h:{}", w, h);
+                super::board::print_board(board.tiles, w, h);
+
+                index = 0;
+                for x in 0..w {
+                    for y in 0..h {
+                        assert_eq!(board.tiles[y][x].unwrap().value, index);
+                        index += 1;
+                    }
+                }
+            }
+        }
     }
     #[test]
     fn parser_works(){
