@@ -105,17 +105,6 @@ pub fn print_board(tiles: [[Option<tile::Tile>; MAX_WIDTH]; MAX_HEIGHT], width: 
     }
 }
 
-// pub fn set_tile(mut tiles: [[Option<Tile>; MAX_WIDTH]; MAX_HEIGHT], x: usize, y: usize, val: usize){
-//     let mut row = tiles[y];
-//     match tiles[y][x] {
-//         Some(i) => {
-//             row[x] = Some(Tile{x, y, value: val, merged: i.merged});
-//         }
-//         None => if crate::DEBUG_INFO {println!("Error!")},
-//     }
-//     tiles[y] = row;
-// }
-
 pub fn create_tiles(width: usize, heigth: usize) -> [[Option<Tile>; MAX_WIDTH]; MAX_HEIGHT] {
     let mut tiles: [[Option<Tile>; MAX_WIDTH]; MAX_HEIGHT] = [[None; MAX_WIDTH]; MAX_HEIGHT];
     for y in 0..width{
