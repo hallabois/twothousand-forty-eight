@@ -125,12 +125,9 @@ pub fn board_to_string(tiles: [[Option<tile::Tile>; MAX_WIDTH]; MAX_HEIGHT], wid
         for x in 0..width{
             match tiles[y][x] {
                 Some(i) => {
-                    let string = i.value.to_string();
-                    let mut toadd = format!("{}\t", if i.value == 0 {"."} else {string.as_str()} );
-                    if pad > 0 {
-                        toadd = (&toadd).pad_to_width(16);
-                    }
-                    out += &toadd;
+                    let mut string = i.value.to_string();
+                    string = (&string).pad_to_width_with_char(pad, ' ');
+                    out += &format!("{}\t", string.as_str() );
                 },
                 None => {
                     out += "?\t";
