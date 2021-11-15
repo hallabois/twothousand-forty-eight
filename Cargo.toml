@@ -10,3 +10,4 @@ description = "a basic move validator for the game 2048"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+pad = "0.1.6"

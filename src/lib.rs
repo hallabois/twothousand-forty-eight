@@ -1,8 +1,8 @@
 pub mod board;
 pub mod parser;
 pub mod validator;
-mod direction;
-mod recording;
+pub mod direction;
+pub mod recording;
 
 pub const DEBUG_INFO: bool = false;
 
