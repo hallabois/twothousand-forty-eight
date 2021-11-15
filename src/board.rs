@@ -14,6 +14,13 @@ pub struct Board{
 }
 
 impl Board{
+    pub fn new() -> Board{
+        Board{
+            width: 4,
+            height: 4,
+            tiles: create_tiles(4, 4)
+        }
+    }
     pub fn set_tile(&mut self, x: usize, y: usize, val: usize){
         if let Some(i) = self.tiles[y][x] {
             self.tiles[y][x] = Some(Tile{x, y, value: val, merged: i.merged});
@@ -87,6 +94,12 @@ impl Board{
         let arr_str = format!("[{}]", arr.iter().map( |row| row.join(",") ).collect::<Vec<String>>().iter().map(|s| format!("[{}]",s)).collect::<Vec<String>>().join(","));
         let out = format!("{{\"grid\":{{\"size\":4,\"cells\":{}}},\"score\":464,\"palautukset\":0,\"over\":false,\"won\":false,\"keepPlaying\":false}}", arr_str);
         return out;
+    }
+}
+
+impl Default for Board{
+    fn default() -> Board{
+        Board::new()
     }
 }
 
