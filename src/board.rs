@@ -90,9 +90,9 @@ impl Board{
         return sum;
     }
     pub fn oispahalla_serialize(&self) -> String{
-        let arr = self.tiles.iter().map(|row| row.iter().map( |t| match(t){Some(t)=>t.oispahalla_serialize(),None=>String::from("null")} ).collect::<Vec<String>>() ).collect::<Vec<Vec<String>>>();
+        let arr = self.tiles.iter().map(|row| row.iter().map( |t| match t{Some(t)=>t.oispahalla_serialize(),None=>String::from("null")} ).collect::<Vec<String>>() ).collect::<Vec<Vec<String>>>();
         let arr_str = format!("[{}]", arr.iter().map( |row| row.join(",") ).collect::<Vec<String>>().iter().map(|s| format!("[{}]",s)).collect::<Vec<String>>().join(","));
-        let out = format!("{{\"grid\":{{\"size\":4,\"cells\":{}}},\"score\":464,\"palautukset\":0,\"over\":false,\"won\":false,\"keepPlaying\":false}}", arr_str);
+        let out = format!("{{\"grid\":{{\"size\":4,\"cells\":{}}},\"score\":SCOREHERE,\"palautukset\":0,\"over\":false,\"won\":false,\"keepPlaying\":false}}", arr_str);
         return out;
     }
 }
