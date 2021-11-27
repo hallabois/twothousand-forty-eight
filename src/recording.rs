@@ -32,4 +32,17 @@ impl Recording{
         }
         return out;
     }
+    #[cfg(feature = "history_hash")]
+    pub fn hash_v1(&self) -> String {
+        use sha2::{Sha256, Digest};
+
+        let mut hasher = Sha256::new();
+        hasher.update(self.width.to_string().as_bytes());
+        hasher.update(self.height.to_string().as_bytes());
+        for i in &self.history{
+            hasher.update(i.1.get_index().as_bytes());
+        }
+        let out = format!("{:X}", hasher.finalize());
+        return out;
+    }
 }

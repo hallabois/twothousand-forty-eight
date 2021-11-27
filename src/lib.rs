@@ -92,4 +92,11 @@ mod tests {
         assert_eq!(score, 200028);
         assert_eq!(breaks, 0);
     }
+    #[cfg(feature = "history_hash")]
+    #[test]
+    fn history_hash_works() {
+        use super::lib_testgames::GAME4X4;
+        let history = super::parser::parse_data(String::from(GAME4X4));
+        assert_eq!(history.hash_v1(), String::from("9CAC2643E4E5F66E18FD9150320471F016CAF69FA3865A6DAE1DD9726F6792F5"));
+    }
 }

@@ -9,5 +9,10 @@ description = "a basic engine and move validator for the game 2048"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+
 [dependencies]
-pad = "0.1.6"
+sha2 = {version = "0.9.8", optional = true}
+
+[features]
+default = ["history_hash"]
+history_hash = ["sha2"]

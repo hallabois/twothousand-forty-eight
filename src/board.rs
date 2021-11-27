@@ -118,15 +118,13 @@ pub fn print_board(tiles: [[Option<tile::Tile>; MAX_WIDTH]; MAX_HEIGHT], width: 
     }
 }
 
-use pad::PadStr;
-pub fn board_to_string(tiles: [[Option<tile::Tile>; MAX_WIDTH]; MAX_HEIGHT], width: usize, height: usize, pad: usize) -> String{
+pub fn board_to_string(tiles: [[Option<tile::Tile>; MAX_WIDTH]; MAX_HEIGHT], width: usize, height: usize) -> String{
     let mut out = String::new();
     for y in 0..height{
         for x in 0..width{
             match tiles[y][x] {
                 Some(i) => {
-                    let mut string = i.value.to_string();
-                    string = (&string).pad_to_width_with_char(pad, ' ');
+                    let string = i.value.to_string();
                     out += &format!("{}\t", string.as_str() );
                 },
                 None => {
