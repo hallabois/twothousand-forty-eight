@@ -141,6 +141,9 @@ pub fn board_to_string(tiles: [[Option<tile::Tile>; MAX_WIDTH]; MAX_HEIGHT], wid
 }
 
 pub fn create_tiles(width: usize, heigth: usize) -> [[Option<Tile>; MAX_WIDTH]; MAX_HEIGHT] {
+    if width > MAX_WIDTH || heigth > MAX_HEIGHT {
+        panic!("Board size too big! This version of the program has been compiled to support the maximum size of {:?}", (MAX_WIDTH, MAX_HEIGHT));
+    }
     let mut tiles: [[Option<Tile>; MAX_WIDTH]; MAX_HEIGHT] = [[None; MAX_WIDTH]; MAX_HEIGHT];
     for x in 0..width{
         for y in 0..heigth{
