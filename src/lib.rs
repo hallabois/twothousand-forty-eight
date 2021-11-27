@@ -44,12 +44,20 @@ mod tests {
         }
     }
     #[test]
-    fn parser_works(){
+    fn parser_works_4x4(){
         use super::lib_testgames::GAME4X4;
         let history4x4 = super::parser::parse_data(String::from(GAME4X4));
         assert_eq!(history4x4.width, 4);
         assert_eq!(history4x4.height, 4);
         assert_eq!(history4x4.history.len(), 576);
+    }
+    #[test]
+    fn parser_works_3x3(){
+        use super::lib_testgames::GAME3X3;
+        let history4x4 = super::parser::parse_data(String::from(GAME3X3));
+        assert_eq!(history4x4.width, 3);
+        assert_eq!(history4x4.height, 3);
+        assert_eq!(history4x4.history.len(), 500);
     }
     #[test]
     fn validator_works_normal_4x4_2breaks() {
