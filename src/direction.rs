@@ -1,4 +1,8 @@
+#[cfg(feature = "wasm")]
+use serde::{Serialize, Deserialize};
+
 #[derive(Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(feature = "wasm", derive(Serialize, Deserialize))]
 pub enum Direction{
     UP,
     RIGHT,

@@ -6,6 +6,18 @@ pub mod recording;
 
 pub const DEBUG_INFO: bool = false;
 
+
+#[cfg(feature = "wasm")]
+use wasm_bindgen::prelude::*;
+#[cfg(feature = "wasm")]
+
+#[cfg(feature = "wasm")]
+#[wasm_bindgen]
+pub fn parse(data: &str) -> String {
+    let parsed = parser::parse_data(String::from(data));
+    return serde_json::to_string(&parsed).unwrap();
+}
+
 pub mod lib_testgames;
 
 #[cfg(test)]

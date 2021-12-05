@@ -3,7 +3,11 @@ use crate::board::MAX_WIDTH;
 use crate::board::MAX_HEIGHT;
 use crate::direction::Direction;
 
+#[cfg(feature = "wasm")]
+use serde::{Serialize, Deserialize};
+
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "wasm", derive(Serialize, Deserialize))]
 pub struct Recording{
     pub width: usize,
     pub height: usize,
