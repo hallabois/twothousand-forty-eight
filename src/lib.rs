@@ -18,6 +18,17 @@ pub fn parse(data: &str) -> String {
     return serde_json::to_string(&parsed).unwrap();
 }
 
+#[cfg(feature = "wasm")]
+#[wasm_bindgen]
+pub fn get_frames(data: &str) -> String {
+    let parsed = parser::parse_data(String::from(data));
+    let out = parsed.history.iter().map(|x| {
+        let board = board::Board{ width: parsed.width, height: parsed.height, tiles: x.0 };
+        board.oispahalla_serialize()
+    }).collect::<Vec<String>>();
+    return serde_json::to_string(&out).unwrap();
+}
+
 pub mod lib_testgames;
 
 #[cfg(test)]
