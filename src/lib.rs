@@ -29,6 +29,15 @@ pub fn get_frames(data: &str) -> String {
     return serde_json::to_string(&out).unwrap();
 }
 
+#[cfg(feature = "wasm")]
+#[wasm_bindgen]
+pub fn validate(data: &str) -> String {
+    let parsed = parser::parse_data(String::from(data));
+    // let first_move_valid = validator::validate_first_move(&parsed);
+    let history_valid = validator::validate_history(parsed);
+    return serde_json::to_string(&history_valid).unwrap();
+}
+
 pub mod lib_testgames;
 
 #[cfg(test)]
