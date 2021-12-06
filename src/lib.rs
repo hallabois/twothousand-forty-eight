@@ -38,6 +38,13 @@ pub fn validate(data: &str) -> String {
     return serde_json::to_string(&history_valid).unwrap();
 }
 
+#[cfg(all(feature = "wasm", feature = "history_hash"))]
+#[wasm_bindgen]
+pub fn hash(data: &str) -> String {
+    let parsed = parser::parse_data(String::from(data));
+    return serde_json::to_string(&parsed.hash_v1()).unwrap();
+}
+
 pub mod lib_testgames;
 
 #[cfg(test)]
