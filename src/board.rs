@@ -27,7 +27,7 @@ impl Board{
     }
     pub fn set_tile(&mut self, x: usize, y: usize, val: usize){
         if let Some(i) = self.tiles[y][x] {
-            self.tiles[y][x] = Some(Tile{x, y, value: val, merged: i.merged});
+            self.tiles[y][x] = Some(Tile::new(x, y,val, i.merged));
         } else {
             if crate::DEBUG_INFO {println!("Error!")};
         }
@@ -149,7 +149,7 @@ pub fn create_tiles(width: usize, heigth: usize) -> [[Option<Tile>; MAX_WIDTH]; 
     let mut tiles: [[Option<Tile>; MAX_WIDTH]; MAX_HEIGHT] = [[None; MAX_WIDTH]; MAX_HEIGHT];
     for x in 0..width{
         for y in 0..heigth{
-            tiles[y][x] = Some(Tile{x: x, y: y, value: 0, merged: false});
+            tiles[y][x] = Some(Tile::new(x, y, 0, false));
         }
     }
     return tiles;
@@ -280,7 +280,7 @@ pub fn is_move_possible(board: Board, dir: Direction) -> ( [[Option<Tile>; MAX_W
             match board.tiles[y][x] {
                 None => if crate::DEBUG_INFO {println!("Error (pt. 6)")},
                 Some(t2) => {
-                    universe[t2.y][t2.x] = Some( Tile{x: t2.x, y: t2.y, value: t2.value, merged: false} );
+                    universe[t2.y][t2.x] = Some( Tile::new(t2.x, t2.y, t2.value, false) );
                 }
             }
         }
@@ -302,8 +302,8 @@ pub fn is_move_possible(board: Board, dir: Direction) -> ( [[Option<Tile>; MAX_W
                 let closest = get_closest_tile(*t, &occupied_tiles, dir, t.value);
                 if t != &closest && t.value == closest.value && !merged_tiles.contains( &(closest.x, closest.y) ) && !closest.merged {
                     
-                    universe[t.y][t.x] = Some( Tile{x: t.x, y: t.y, value: 0, merged: false} );
-                    let merged = Tile{x: closest.x, y: closest.y, value: closest.value*2, merged: true};
+                    universe[t.y][t.x] = Some( Tile::new(t.x, t.y, 0, false) );
+                    let merged = Tile::new(closest.x, closest.y, closest.value*2, true);
                     score += merged.value;
                     universe[closest.y][closest.x] = Some( merged );
                     merged_tiles.push( (merged.x, merged.y) );
@@ -333,9 +333,9 @@ pub fn is_move_possible(board: Board, dir: Direction) -> ( [[Option<Tile>; MAX_W
                 let farthest_free = get_farthest_tile(*t, &all_tiles, dir_to_use , 0);
 
                 if farthest_free != *t {
-                    let new_tile = Tile{x: farthest_free.x, y: farthest_free.y, value: t.value, merged: false};
+                    let new_tile = Tile::new(farthest_free.x, farthest_free.y, t.value, false);
 
-                    universe[t.y][t.x] = Some( Tile{x: t.x, y: t.y, value: 0, merged: false} );
+                    universe[t.y][t.x] = Some( Tile::new(t.x, t.y, 0, false) );
                     universe[farthest_free.y][farthest_free.x] = Some( new_tile );
                     
                     if crate::DEBUG_INFO {println!("Move {:?} -> {:?}", t, farthest_free)};
@@ -352,7 +352,7 @@ pub fn is_move_possible(board: Board, dir: Direction) -> ( [[Option<Tile>; MAX_W
             match universe[y][x] {
                 None => if crate::DEBUG_INFO {println!("Error (pt. 9)")},
                 Some(t2) => {
-                    universe[y][x] = Some( Tile{x: t2.x, y: t2.y, value: t2.value, merged: false} );
+                    universe[y][x] = Some( Tile::new(t2.x, t2.y, t2.value, false) );
                 }
             }
         }

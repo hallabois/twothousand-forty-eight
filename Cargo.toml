@@ -19,6 +19,7 @@ serde = {version = "1.0.130", optional = true, features = ["derive"]}
 serde_json = {version = "1.0.72", optional = true}
 
 [features]
-default = ["history_hash", "wasm"]
+default = ["history_hash", "tile_id", "wasm"]
 history_hash = ["sha2"]
 wasm = ["wasm-bindgen", "serde", "serde_json"]
+tile_id = []

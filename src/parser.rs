@@ -47,7 +47,7 @@ pub fn parse_data(data: String) -> Recording {
             let val = i.parse::<usize>().unwrap();
             let x = index % width;
             let y = index / height;
-            board[ y ][ x ] = Some ( board::tile::Tile{x: x, y: y, value: val, merged: false} );
+            board[ y ][ x ] = Some ( board::tile::Tile::new(x, y, val, false) );
             index += 1;
         }
 
@@ -59,7 +59,7 @@ pub fn parse_data(data: String) -> Recording {
             let added_x = added_pos[0].parse::<usize>().unwrap();
             let added_y = added_pos[1].parse::<usize>().unwrap();
             let added_value = added_vals[1].parse::<usize>().unwrap();
-            added_tile = Some( board::tile::Tile{ y: added_y, x: added_x , value: added_value, merged: false } );
+            added_tile = Some( board::tile::Tile::new( added_x, added_y , added_value, false ) );
         }
         
         history.push( (board, direction, added_tile) );
