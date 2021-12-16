@@ -17,9 +17,10 @@ sha2 = {version = "0.9.8", optional = true}
 wasm-bindgen = {version = "0.2.78", optional = true}
 serde = {version = "1.0.130", optional = true, features = ["derive"]}
 serde_json = {version = "1.0.72", optional = true}
+rand = {version = "0.8.4", optional = true}
 
 [features]
 default = ["history_hash", "tile_id", "wasm"]
 history_hash = ["sha2"]
-wasm = ["wasm-bindgen", "serde", "serde_json"]
+wasm = ["wasm-bindgen", "serde", "serde_json", "rand"]
 tile_id = []
