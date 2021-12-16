@@ -6,7 +6,11 @@ pub const MAX_HEIGHT: usize = 6;
 
 use crate::direction::Direction;
 
+#[cfg(feature = "wasm")]
+use serde::{Serialize, Deserialize};
+
 #[derive(Debug, Copy, Clone)]
+#[cfg_attr(feature = "wasm", derive(Serialize, Deserialize))]
 pub struct Board{
     pub width: usize,
     pub height: usize,

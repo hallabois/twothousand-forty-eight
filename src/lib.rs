@@ -9,7 +9,6 @@ pub const DEBUG_INFO: bool = false;
 
 #[cfg(feature = "wasm")]
 use wasm_bindgen::prelude::*;
-#[cfg(feature = "wasm")]
 
 #[cfg(feature = "wasm")]
 #[wasm_bindgen]
@@ -36,6 +35,15 @@ pub fn validate(data: &str) -> String {
     // let first_move_valid = validator::validate_first_move(&parsed);
     let history_valid = validator::validate_history(parsed);
     return serde_json::to_string(&history_valid).unwrap();
+}
+
+#[cfg(feature = "wasm")]
+#[wasm_bindgen]
+pub fn is_move_possible(board_data: &str, dir: usize) -> String {
+    let b = serde_json::from_str(board_data).unwrap();
+    // let first_move_valid = validator::validate_first_move(&parsed);
+    let result = board::is_move_possible(b, direction::Direction::from_index(dir));
+    return serde_json::to_string(&result).unwrap();
 }
 
 #[cfg(all(feature = "wasm", feature = "history_hash"))]

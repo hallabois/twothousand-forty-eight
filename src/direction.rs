@@ -38,4 +38,13 @@ impl Direction {
             Self::END => "e"
         }
     }
+    pub fn from_index(index: usize) -> Direction{
+        match index{
+            0 => Self::UP,
+            1 => Self::RIGHT,
+            2 => Self::DOWN,
+            3 => Self::LEFT,
+            _ => Self::END
+        }
+    }
 }
