@@ -280,7 +280,9 @@ pub fn is_move_possible(board: Board, dir: Direction) -> ( [[Option<Tile>; MAX_W
             match board.tiles[y][x] {
                 None => if crate::DEBUG_INFO {println!("Error (pt. 6)")},
                 Some(t2) => {
-                    universe[t2.y][t2.x] = Some( Tile::new(t2.x, t2.y, t2.value, false) );
+                    let mut t = Tile::new(t2.x, t2.y, t2.value, false);
+                    t.id = t2.id;
+                    universe[t2.y][t2.x] = Some( t );
                 }
             }
         }
@@ -333,7 +335,8 @@ pub fn is_move_possible(board: Board, dir: Direction) -> ( [[Option<Tile>; MAX_W
                 let farthest_free = get_farthest_tile(*t, &all_tiles, dir_to_use , 0);
 
                 if farthest_free != *t {
-                    let new_tile = Tile::new(farthest_free.x, farthest_free.y, t.value, false);
+                    let mut new_tile = Tile::new(farthest_free.x, farthest_free.y, t.value, false);
+                    new_tile.id = t.id;
 
                     universe[t.y][t.x] = Some( Tile::new(t.x, t.y, 0, false) );
                     universe[farthest_free.y][farthest_free.x] = Some( new_tile );
@@ -352,7 +355,7 @@ pub fn is_move_possible(board: Board, dir: Direction) -> ( [[Option<Tile>; MAX_W
             match universe[y][x] {
                 None => if crate::DEBUG_INFO {println!("Error (pt. 9)")},
                 Some(t2) => {
-                    universe[y][x] = Some( Tile::new(t2.x, t2.y, t2.value, false) );
+                    universe[y][x] = Some( Tile{x: t2.x, y: t2.y, value: t2.value, merged: false, id: t2.id} ); // TODO: only assign an id if the tile_id feature is enabled
                 }
             }
         }
