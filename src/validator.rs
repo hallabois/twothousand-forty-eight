@@ -61,11 +61,6 @@ pub fn validate_history(history: Recording) -> (bool, usize, usize) { // Valid, 
                 return (false, 0, breaks);
             }
         }
-        else if ind == history_len - 1{
-            if dir == Direction::END{
-                score += 4; // just... ...no
-            }
-        }
     }
     return (true, score, breaks);
 }

@@ -145,7 +145,7 @@ mod tests {
         assert_eq!(first_move_valid, true);
         let (result1, score, breaks) = super::validator::validate_history(history);
         assert_eq!(result1, true);
-        assert_eq!(score, 6052);
+        assert_eq!(score, 6048);
         assert_eq!(breaks, 2);
     }
     #[test]
