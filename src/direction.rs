@@ -10,6 +10,12 @@ pub enum Direction{
     LEFT,
     END
 }
+pub const REAL_DIRECTIONS: [Direction; 4] = [
+    Direction::UP,
+    Direction::RIGHT,
+    Direction::DOWN,
+    Direction::LEFT
+];
 impl Direction {
     pub fn get_x(&self) -> i64{
         match self{

@@ -84,10 +84,16 @@ pub fn hash(data: &str) -> String {
     return serde_json::to_string(&parsed.hash_v1()).unwrap();
 }
 
+pub fn assert_score(score: usize, expected: usize, score_margin: usize) {
+    assert!(score <= expected+score_margin, "{} !< {}", score, expected+score_margin);
+}
+
 pub mod lib_testgames;
 
 #[cfg(test)]
 mod tests {
+    use crate::assert_score;
+
     #[test]
     fn board_creation_works(){
         use super::board::Board;
@@ -138,25 +144,58 @@ mod tests {
         assert_eq!(history4x4.history.len(), 500);
     }
     #[test]
+    fn validator_works_normal_4x4_0breaks_a() {
+        use super::lib_testgames::GAME4X4B;
+        let history = super::parser::parse_data(String::from(GAME4X4B));
+        let first_move_valid = super::validator::validate_first_move(&history);
+        assert_eq!(first_move_valid, true);
+        let (result1, score, score_margin, breaks) = super::validator::validate_history(history);
+        assert_eq!(result1, true);
+        assert_score(score, 2788, score_margin);
+        assert_eq!(breaks, 0);
+    }
+    #[test]
+    fn validator_works_normal_4x4_0breaks_b() {
+        use super::lib_testgames::GAME4X4C;
+        let history = super::parser::parse_data(String::from(GAME4X4C));
+        let first_move_valid = super::validator::validate_first_move(&history);
+        assert_eq!(first_move_valid, true);
+        let (result1, score, score_margin, breaks) = super::validator::validate_history(history);
+        assert_eq!(result1, true);
+        assert_score(score, 2624, score_margin);
+        assert_eq!(breaks, 0);
+    }
+    #[test]
     fn validator_works_normal_4x4_2breaks() {
         use super::lib_testgames::GAME4X4;
         let history = super::parser::parse_data(String::from(GAME4X4));
         let first_move_valid = super::validator::validate_first_move(&history);
         assert_eq!(first_move_valid, true);
-        let (result1, score, breaks) = super::validator::validate_history(history);
+        let (result1, score, score_margin, breaks) = super::validator::validate_history(history);
         assert_eq!(result1, true);
-        assert_eq!(score, 6048);
+        assert_score(score, 6048, score_margin);
         assert_eq!(breaks, 2);
     }
     #[test]
-    fn validator_works_normal_3x3_0breaks() {
+    fn validator_works_normal_3x3_0breaks_a() {
         use super::lib_testgames::GAME3X3;
         let history = super::parser::parse_data(String::from(GAME3X3));
         let first_move_valid = super::validator::validate_first_move(&history);
         assert_eq!(first_move_valid, true);
-        let (result1, score, breaks) = super::validator::validate_history(history);
+        let (result1, score, score_margin, breaks) = super::validator::validate_history(history);
         assert_eq!(result1, true);
-        assert_eq!(score, 14220);
+        assert_score(score, 14220, score_margin);
+        assert_eq!(breaks, 0);
+    }
+    #[test]
+    fn validator_works_normal_3x3_0breaks_b() {
+        use super::lib_testgames::GAME3X3B;
+        let history = super::parser::parse_data(String::from(GAME3X3B));
+        let first_move_valid = super::validator::validate_first_move(&history);
+        assert_eq!(first_move_valid, true);
+        let (result1, score, score_margin, breaks) = super::validator::validate_history(history);
+        assert_eq!(result1, true);
+        assert_score(score, 208, score_margin);
         assert_eq!(breaks, 0);
     }
     #[test]
@@ -165,9 +204,9 @@ mod tests {
         let history = super::parser::parse_data(String::from(GAMEOBSCENE));
         let first_move_valid = super::validator::validate_first_move(&history);
         assert_eq!(first_move_valid, true);
-        let (result1, score, breaks) = super::validator::validate_history(history);
+        let (result1, score, score_margin, breaks) = super::validator::validate_history(history);
         assert_eq!(result1, true);
-        assert_eq!(score, 200028);
+        assert_score(score, 200028, score_margin);
         assert_eq!(breaks, 0);
     }
     #[cfg(feature = "history_hash")]

@@ -1,3 +1,4 @@
+use crate::direction;
 use crate::recording::Recording;
 use crate::direction::Direction;
 use crate::board::Board;
@@ -6,8 +7,9 @@ use crate::board::print_board;
 
 const MAX_HISTORY_LENGTH: usize = usize::MAX;
 
-pub fn validate_history(history: Recording) -> (bool, usize, usize) { // Valid, score, breaks
+pub fn validate_history(history: Recording) -> (bool, usize, usize, usize) { // Valid, score, possible score margin, breaks
     let mut score: usize = 0;
+    let mut score_margin: usize = 0;
 
     let history_len = history.history.len();
     let mut breaks: usize = 0;
@@ -29,7 +31,7 @@ pub fn validate_history(history: Recording) -> (bool, usize, usize) { // Valid, 
                     if crate::DEBUG_INFO {println!("[Add] Change {:?} => {:?}", predicted_board[add.y][add.x], add)};
                     if add.value > 4 {
                         println!("Invalid addition value at {:?}!", add);
-                        return (false, 0, breaks);
+                        return (false, 0, 0, breaks);
                     };
                     predicted_board[add.y][add.x] = Some( add );
                 },
@@ -41,7 +43,7 @@ pub fn validate_history(history: Recording) -> (bool, usize, usize) { // Valid, 
             let board_predicted = Board{tiles: predicted_board, width: history.width, height: history.height};
             let board_actual = Board{tiles: board_next, width: history.width, height: history.height};
             if dir == Direction::END && board_predicted.get_total_value() == board_actual.get_total_value() {
-
+                
             }
             else if predicted_board == board_next { // (predicted.1) && 
                 
@@ -58,11 +60,24 @@ pub fn validate_history(history: Recording) -> (bool, usize, usize) { // Valid, 
                 print_board(predicted_board, history.width, history.height);
                 println!("Got instead: (score {}) ", board_actual.get_total_value());
                 print_board(board_next, history.width, history.height);
-                return (false, 0, breaks);
+                return (false, 0, 0, breaks);
             }
         }
     }
-    return (true, score, breaks);
+    // Get the score margin
+    let last_history = history.history.last();
+    match last_history {
+        None => {},
+        Some(last_history) => {
+            let last_board = last_history.0;
+            for dir in direction::REAL_DIRECTIONS {
+                let predicted = is_move_possible(Board { tiles: last_board, width: history.width, height: history.height }, dir);
+                score_margin = score_margin.max( predicted.2 );
+            }
+        }
+    }
+
+    return (true, score, score_margin, breaks);
 }
 
 pub fn validate_first_move(history: &Recording) -> bool {
