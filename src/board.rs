@@ -281,7 +281,10 @@ pub fn is_move_possible(board: Board, dir: Direction) -> ( [[Option<Tile>; MAX_W
                 None => if crate::DEBUG_INFO {println!("Error (pt. 6)")},
                 Some(t2) => {
                     let mut t = Tile::new(t2.x, t2.y, t2.value, false);
-                    t.id = t2.id;
+                    #[cfg(feature = "history_hash")]
+                    {
+                        t.id = t2.id;
+                    }
                     universe[t2.y][t2.x] = Some( t );
                 }
             }
@@ -336,7 +339,10 @@ pub fn is_move_possible(board: Board, dir: Direction) -> ( [[Option<Tile>; MAX_W
 
                 if farthest_free != *t {
                     let mut new_tile = Tile::new(farthest_free.x, farthest_free.y, t.value, false);
-                    new_tile.id = t.id;
+                    #[cfg(feature = "history_hash")]
+                    {
+                        new_tile.id = t.id;
+                    }
 
                     universe[t.y][t.x] = Some( Tile::new(t.x, t.y, 0, false) );
                     universe[farthest_free.y][farthest_free.x] = Some( new_tile );
@@ -355,7 +361,16 @@ pub fn is_move_possible(board: Board, dir: Direction) -> ( [[Option<Tile>; MAX_W
             match universe[y][x] {
                 None => if crate::DEBUG_INFO {println!("Error (pt. 9)")},
                 Some(t2) => {
-                    universe[y][x] = Some( Tile{x: t2.x, y: t2.y, value: t2.value, merged: false, id: t2.id} ); // TODO: only assign an id if the tile_id feature is enabled
+                    let nt: Tile;
+                    #[cfg(feature = "history_hash")]
+                    {
+                        nt = Tile{x: t2.x, y: t2.y, value: t2.value, merged: false, id: t2.id};
+                    }
+                    #[cfg(not(feature = "history_hash"))]
+                    {
+                        nt = Tile{x: t2.x, y: t2.y, value: t2.value, merged: false};
+                    }
+                    universe[y][x] = Some( nt );
                 }
             }
         }

@@ -160,7 +160,7 @@ mod tests {
         }
 
         #[test]
-        fn validator_works_normal_4x4_0breaks_a() {
+        fn works_normal_4x4_0breaks_a() {
             use lib_testgames::GAME4X4B;
             let history = parser::parse_data(String::from(GAME4X4B));
             let first_move_valid = validator::validate_first_move(&history);
@@ -171,7 +171,7 @@ mod tests {
             assert_eq!(breaks, 0);
         }
         #[test]
-        fn validator_works_normal_4x4_0breaks_b() {
+        fn works_normal_4x4_0breaks_b() {
             use lib_testgames::GAME4X4C;
             let history = parser::parse_data(String::from(GAME4X4C));
             let first_move_valid = validator::validate_first_move(&history);
@@ -182,7 +182,7 @@ mod tests {
             assert_eq!(breaks, 0);
         }
         #[test]
-        fn validator_works_normal_4x4_2breaks() {
+        fn works_normal_4x4_2breaks() {
             use lib_testgames::GAME4X4;
             let history = parser::parse_data(String::from(GAME4X4));
             let first_move_valid = validator::validate_first_move(&history);
@@ -193,7 +193,7 @@ mod tests {
             assert_eq!(breaks, 2);
         }
         #[test]
-        fn validator_works_normal_3x3_0breaks_a() {
+        fn works_normal_3x3_0breaks_a() {
             use lib_testgames::GAME3X3;
             let history = parser::parse_data(String::from(GAME3X3));
             let first_move_valid = validator::validate_first_move(&history);
@@ -204,7 +204,7 @@ mod tests {
             assert_eq!(breaks, 0);
         }
         #[test]
-        fn validator_works_normal_3x3_0breaks_b() {
+        fn works_normal_3x3_0breaks_b() {
             use lib_testgames::GAME3X3B;
             let history = parser::parse_data(String::from(GAME3X3B));
             let first_move_valid = validator::validate_first_move(&history);
@@ -215,7 +215,7 @@ mod tests {
             assert_eq!(breaks, 0);
         }
         #[test]
-        fn validator_works_looong_4x4_0breaks() {
+        fn works_looong_4x4_0breaks() {
             use lib_testgames::GAMEOBSCENE;
             let history = parser::parse_data(String::from(GAMEOBSCENE));
             let first_move_valid = validator::validate_first_move(&history);
