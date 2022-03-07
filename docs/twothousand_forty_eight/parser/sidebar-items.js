@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["parse_data","Parses a string representation of a played 2048 game into a [Recording]"]]});
