@@ -1,23 +1,34 @@
+//! Provides [Board] to hold game board data and [tile] to hold the values of the board tiles.
+
 pub mod tile;
 use tile::Tile;
-
-pub const MAX_WIDTH: usize = 6;
-pub const MAX_HEIGHT: usize = 6;
-
 use crate::direction::Direction;
-
 #[cfg(feature = "wasm")]
 use serde::{Serialize, Deserialize};
 
+/// Max width of a board the program can handle. Be careful when increasing, as this increases memory use expotentially.
+pub const MAX_WIDTH: usize = 6;
+
+/// Max height of a board the program can handle. Be careful when increasing, as this increases memory use expotentially.
+pub const MAX_HEIGHT: usize = 6;
+
+/// Holds game board data
 #[derive(Debug, Copy, Clone)]
 #[cfg_attr(feature = "wasm", derive(Serialize, Deserialize))]
 pub struct Board{
+    /// The width of the board. Value of 0 is untested
     pub width: usize,
+
+    /// The height of the board. Value of 0 is untested
     pub height: usize,
+
+    /// The tiles of the board, note that the size of the array is allocated based on the max size.
     pub tiles: [[Option<Tile>; MAX_WIDTH]; MAX_HEIGHT]
 }
 
 impl Board{
+
+    /// Create a new board with the height and width of 4 and initialize all tiles with [create_tiles]
     pub fn new() -> Board{
         Board{
             width: 4,
@@ -25,6 +36,8 @@ impl Board{
             tiles: create_tiles(4, 4)
         }
     }
+
+    /// Set a tile on the board and silently fail if the target tile doesn't exist and [DEBUG_INFO](crate::DEBUG_INFO) is disabled.
     pub fn set_tile(&mut self, x: usize, y: usize, val: usize){
         if let Some(i) = self.tiles[y][x] {
             self.tiles[y][x] = Some(Tile::new(x, y,val, i.merged));
@@ -32,6 +45,8 @@ impl Board{
             if crate::DEBUG_INFO {println!("Error!")};
         }
     }
+
+    /// Get the tiles that exist and which's values are nonzero
     pub fn get_occupied_tiles(&self) -> Vec<Tile> {
         let mut out: Vec<Tile> = vec![];
         for y in 0..self.height{
@@ -49,6 +64,8 @@ impl Board{
         }
         out
     }
+
+    /// Get the tiles that exist and which's values are zero
     pub fn get_non_occupied_tiles(&self) -> Vec<Tile> {
         let mut out: Vec<Tile> = vec![];
         for y in 0..self.height{
@@ -66,6 +83,8 @@ impl Board{
         }
         out
     }
+
+    /// Get all tiles that exist ( aren't None )
     pub fn get_all_tiles(&self) -> Vec<Tile>{
         let mut out: Vec<Tile> = vec![];
         for y in 0..self.height{
@@ -81,6 +100,8 @@ impl Board{
         }
         out
     }
+
+    /// Get the combined value of all the tiles
     pub fn get_total_value(&self) -> usize {
         let mut sum: usize = 0;
         for row in self.tiles{
@@ -93,6 +114,9 @@ impl Board{
         }
         return sum;
     }
+
+    /// Gives a representation of the board that is compatible with our anticheat systems
+    /// TODO: move to an implementation
     pub fn oispahalla_serialize(&self) -> String{
         let arr = self.tiles.iter().map(|row| row.iter().map( |t| match t{Some(t)=>t.oispahalla_serialize(),None=>String::from("null")} ).collect::<Vec<String>>() ).collect::<Vec<Vec<String>>>();
         let arr_str = format!("[{}]", arr.iter().map( |row| row.join(",") ).collect::<Vec<String>>().iter().map(|s| format!("[{}]",s)).collect::<Vec<String>>().join(","));
@@ -101,12 +125,14 @@ impl Board{
     }
 }
 
+/// Initialize a new board with [Board::new]
 impl Default for Board{
     fn default() -> Board{
         Board::new()
     }
 }
 
+/// Print a debug visualization of the board
 pub fn print_board(tiles: [[Option<tile::Tile>; MAX_WIDTH]; MAX_HEIGHT], width: usize, height: usize){
     for y in 0..height{
         for x in 0..width{
@@ -122,6 +148,7 @@ pub fn print_board(tiles: [[Option<tile::Tile>; MAX_WIDTH]; MAX_HEIGHT], width: 
     }
 }
 
+/// Return a debug visualization of the board
 pub fn board_to_string(tiles: [[Option<tile::Tile>; MAX_WIDTH]; MAX_HEIGHT], width: usize, height: usize) -> String{
     let mut out = String::new();
     for y in 0..height{
@@ -142,6 +169,7 @@ pub fn board_to_string(tiles: [[Option<tile::Tile>; MAX_WIDTH]; MAX_HEIGHT], wid
     out
 }
 
+/// Initialize an array of empty tiles created with [Tile::new]
 pub fn create_tiles(width: usize, heigth: usize) -> [[Option<Tile>; MAX_WIDTH]; MAX_HEIGHT] {
     if width > MAX_WIDTH || heigth > MAX_HEIGHT {
         panic!("Board size too big! This version of the program has been compiled to support the maximum size of {:?}", (MAX_WIDTH, MAX_HEIGHT));
@@ -155,6 +183,7 @@ pub fn create_tiles(width: usize, heigth: usize) -> [[Option<Tile>; MAX_WIDTH]; 
     return tiles;
 }
 
+/// Return the closest tile with the value of "mask" to the tile "t" in the given direction "dir", if "t" is returned, no such tile was found.
 pub fn get_closest_tile(t: Tile, viable_tiles: &Vec<Tile>, dir: Direction, mask: usize) -> Tile{ //if t is returned, an error occured along the way
     let dir_x = dir.get_x();
     let dir_y = dir.get_y();
@@ -218,6 +247,7 @@ pub fn get_closest_tile(t: Tile, viable_tiles: &Vec<Tile>, dir: Direction, mask:
     return closest;
 }
 
+/// Return the farthest tile with the value of "mask" to the tile "t" in the given direction "dir", if "t" is returned, no such tile was found.
 pub fn get_farthest_tile(t: Tile, all_tiles: &Vec<Tile>, dir: Direction, mask: usize) -> Tile{ //if t is returned, an error occured along the way
     let dir_x = dir.get_x();
     let dir_y = dir.get_y();
@@ -263,6 +293,7 @@ pub fn get_farthest_tile(t: Tile, all_tiles: &Vec<Tile>, dir: Direction, mask: u
     return farthest;
 }
 
+/// Check if a move is possible in the direction "dir" and return the next board, the possibility, and the score gain
 pub fn is_move_possible(board: Board, dir: Direction) -> ( [[Option<Tile>; MAX_WIDTH]; MAX_HEIGHT], bool, usize ) {
 
     if dir == Direction::END {

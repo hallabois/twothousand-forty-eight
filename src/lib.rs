@@ -1,3 +1,8 @@
+#![feature(doc_auto_cfg)]
+//! a basic engine and move validator for the game 2048
+//! 
+//! Includes wasm functions generated with wasm_bindgen
+
 pub mod board;
 pub mod parser;
 pub mod validator;
