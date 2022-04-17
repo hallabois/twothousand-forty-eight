@@ -65,20 +65,23 @@ pub fn apply_move(board_data: &str, dir: usize, add_random: bool) -> String {
     return serde_json::to_string(&result).unwrap();
 }
 
+pub fn add_random_to_board(board: &mut board::Board) {
+    let mut possible = board.get_non_occupied_tiles();
+    if possible.len() > 0 {
+        possible.shuffle(&mut rand::thread_rng());
+        let t = possible[0];
+        let mut possible_values = vec![2, 2, 2, 4];
+        possible_values.shuffle(&mut rand::thread_rng());
+        board.set_tile(t.x, t.y, possible_values[0]);
+    }
+}
 
 #[cfg(feature = "wasm")]
 #[wasm_bindgen]
 pub fn add_random(board_data: &str) -> String {
     let b: board::Board = serde_json::from_str(board_data).unwrap();
     let mut game = board::Board{ width: b.width, height: b.height, tiles: b.tiles };
-    let mut possible = game.get_non_occupied_tiles();
-    if possible.len() > 0 {
-        possible.shuffle(&mut rand::thread_rng());
-        let t = possible[0];
-        let mut possible_values = vec![2, 2, 2, 4];
-        possible_values.shuffle(&mut rand::thread_rng());
-        game.set_tile(t.x, t.y, possible_values[0]);
-    }
+    add_random_to_board(&mut game);
     return serde_json::to_string(&game.tiles).unwrap();
 }
 

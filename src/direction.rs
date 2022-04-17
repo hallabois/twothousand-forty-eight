@@ -7,6 +7,9 @@ use serde::{Serialize, Deserialize};
 #[derive(Debug, Copy, Clone, PartialEq)]
 #[cfg_attr(feature = "wasm", derive(Serialize, Deserialize))]
 pub enum Direction{
+    /// The game was just started and no move was made on the first frame. Not possible in a real game but some functions need this.
+    START,
+
     UP,
     RIGHT,
     DOWN,
@@ -32,7 +35,8 @@ impl Direction {
             Self::RIGHT => 1,
             Self::DOWN => 0,
             Self::LEFT => -1,
-            Self::END => 0
+            Self::END => 0,
+            Self::START => 0,
         }
     }
 
@@ -43,7 +47,8 @@ impl Direction {
             Self::RIGHT => 0,
             Self::DOWN => 1,
             Self::LEFT => 0,
-            Self::END => 0
+            Self::END => 0,
+            Self::START => 0,
         }
     }
 
@@ -54,7 +59,8 @@ impl Direction {
             Self::RIGHT => "1",
             Self::DOWN => "2",
             Self::LEFT => "3",
-            Self::END => "e"
+            Self::END => "e",
+            Self::START => "s",
         }
     }
 
