@@ -22,7 +22,7 @@ pub fn parse(data: &str) -> String {
 #[cfg(feature = "wasm")]
 #[wasm_bindgen]
 pub fn get_frames(data: &str) -> String {
-    let parsed = parser::parse_data(String::from(data));
+    let parsed = parser::parse_data(String::from(data)).unwrap();
     let out = parsed.history.iter().map(|x| {
         let board = board::Board{ width: parsed.width, height: parsed.height, tiles: x.0 };
         board.oispahalla_serialize()
@@ -33,7 +33,7 @@ pub fn get_frames(data: &str) -> String {
 #[cfg(feature = "wasm")]
 #[wasm_bindgen]
 pub fn validate(data: &str) -> String {
-    let parsed = parser::parse_data(String::from(data));
+    let parsed = parser::parse_data(String::from(data)).unwrap();
     // let first_move_valid = validator::validate_first_move(&parsed);
     let history_valid = validator::validate_history(parsed);
     return serde_json::to_string(&history_valid).unwrap();
@@ -80,7 +80,7 @@ pub fn add_random(board_data: &str) -> String {
 #[cfg(all(feature = "wasm", feature = "history_hash"))]
 #[wasm_bindgen]
 pub fn hash(data: &str) -> String {
-    let parsed = parser::parse_data(String::from(data));
+    let parsed = parser::parse_data(String::from(data)).unwrap();
     return serde_json::to_string(&parsed.hash_v1()).unwrap();
 }
 

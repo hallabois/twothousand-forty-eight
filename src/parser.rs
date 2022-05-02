@@ -3,17 +3,17 @@ use crate::board;
 use crate::direction::Direction;
 use crate::board::create_tiles;
 
-pub fn parse_data(data: String) -> Recording {
+pub fn parse_data(data: String) -> Option<Recording> {
     let mut history: Vec < ( [[Option<board::tile::Tile>; board::MAX_WIDTH]; board::MAX_HEIGHT], Direction, Option<board::tile::Tile> ) > = vec![];
     let mut width = 4;
     let mut height = 4;
     let mut historypart = data.clone();
     if data.split("S").collect::<Vec<&str>>().len() > 1 {
         let parts = data.split("S").collect::<Vec<&str>>();
-        historypart = parts[1].to_string();
+        historypart = parts.get(1)?.to_string();
         let dimensions = parts[0].split("x").collect::<Vec<&str>>();
-        width = dimensions[0].parse::<usize>().unwrap();
-        height = dimensions[1].parse::<usize>().unwrap();
+        width = dimensions.get(0)?.parse::<usize>().unwrap();
+        height = dimensions.get(1)?.parse::<usize>().unwrap();
     }
     for step in historypart.split(":"){
         let parts = step.split(";").collect::<Vec<&str>>();
@@ -22,9 +22,9 @@ pub fn parse_data(data: String) -> Recording {
         if bdata.len() > 1 {
             added = bdata[1];
         }
-        let b = bdata[0];
+        let b = *bdata.get(0)?;
         let mut board = create_tiles(width,height);
-        let dir = parts[1];
+        let dir = *parts.get(1)?;
         let direction = match dir{
             "0" => {
                 Direction::UP
@@ -64,5 +64,5 @@ pub fn parse_data(data: String) -> Recording {
         
         history.push( (board, direction, added_tile) );
     }
-    return Recording{ history, width, height };
+    return Some(Recording{ history, width, height });
 }
