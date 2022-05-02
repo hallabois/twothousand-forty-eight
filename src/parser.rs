@@ -1,10 +1,25 @@
 use crate::recording::Recording;
+use crate::recording::History;
 use crate::board;
 use crate::direction::Direction;
 use crate::board::create_tiles;
 
+/// Parses a string representation of a played 2048 game into a [Recording]
+/// 
+/// The string should be in the following format:
+/// - The string can start with ```[w]x[h]S```, specifying the size of the game board, otherwise it defaults to 4 by 4.
+/// (w = width, h = height, both are a [usize])
+/// - History indicies should be separated by a single ```:```
+///     - ```;``` separates the history index to:
+///         - The board data of the move on the left side, separated by a ```+```:
+///             - Each tile value of the board, separated from eachother by dots (```.```) on the left side
+///             - The tile added to the board after this move on the right side
+///                 - The tile's value is on the right side of a comma (```,```) and it's position is on the left side of the comma, separated by a dot (```.```), x first
+///         - [Direction] index of the move on the right side
+/// 
+/// e.g. ```4x4S0.0.0.0.0.0.0.0.0.0.0.0.0.0.2.2+2,1.2;1```
 pub fn parse_data(data: String) -> Option<Recording> {
-    let mut history: Vec < ( [[Option<board::tile::Tile>; board::MAX_WIDTH]; board::MAX_HEIGHT], Direction, Option<board::tile::Tile> ) > = vec![];
+    let mut history: History = vec![];
     let mut width = 4;
     let mut height = 4;
     let mut historypart = data.clone();
@@ -24,24 +39,8 @@ pub fn parse_data(data: String) -> Option<Recording> {
         }
         let b = *bdata.get(0)?;
         let mut board = create_tiles(width,height);
-        let dir = *parts.get(1)?;
-        let direction = match dir{
-            "0" => {
-                Direction::UP
-            },
-            "1" => {
-                Direction::RIGHT
-            },
-            "2" => {
-                Direction::DOWN
-            },
-            "3" => {
-                Direction::LEFT
-            },
-            _ => {
-                Direction::END
-            }
-        };
+        let dir = parts[1];
+        let direction = Direction::from_index_str(dir);
         let mut index: usize = 0;
         for i in b.split("."){
             let val = i.parse::<usize>().unwrap();

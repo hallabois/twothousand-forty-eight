@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["twothousand_forty_eight"] = [{"text":"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/default/trait.Default.html\" title=\"trait core::default::Default\">Default</a> for <a class=\"struct\" href=\"twothousand_forty_eight/board/struct.Board.html\" title=\"struct twothousand_forty_eight::board::Board\">Board</a>","synthetic":false,"types":["twothousand_forty_eight::board::Board"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

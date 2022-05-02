@@ -1,0 +1,1 @@
+window.ALL_CRATES = ["twothousand_forty_eight"];

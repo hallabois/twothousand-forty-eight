@@ -2,7 +2,7 @@
 name = "twothousand-forty-eight"
 version = "0.2.0"
 edition = "2021"
-authors = ["jonnelafin <elias.eskelinen@pm.me>"]
+authors = ["xypine <elias.eskelinen@pm.me>"]
 license = "MIT"
 keywords = ["2048", "game"]
 description = "a basic engine and move validator for the game 2048"

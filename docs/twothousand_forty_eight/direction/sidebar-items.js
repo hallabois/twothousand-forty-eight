@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["REAL_DIRECTIONS","A list of all the directions excluding the empty placeholder END direction"]],"enum":[["Direction","A representation of the possible move directions during the game."]]});

@@ -1,3 +1,5 @@
+//! Provides [Recording], to hold recorded games
+
 use crate::board::tile::Tile;
 use crate::board::MAX_WIDTH;
 use crate::board::MAX_HEIGHT;
@@ -6,15 +8,26 @@ use crate::direction::Direction;
 #[cfg(feature = "wasm")]
 use serde::{Serialize, Deserialize};
 
+pub type History = Vec<( [[Option<Tile>; MAX_WIDTH]; MAX_HEIGHT], Direction, Option<Tile> )>;
+
+/// Represents a recording of a played game of 2048, usually parsed from a string with [parser](crate::parser).
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "wasm", derive(Serialize, Deserialize))]
 pub struct Recording{
+
+    /// The width of the recorded game
     pub width: usize,
+
+    /// The height of the recorded game
     pub height: usize,
-    pub history: Vec<( [[Option<Tile>; MAX_WIDTH]; MAX_HEIGHT], Direction, Option<Tile> )>
+
+    /// The move history, containing data about the current board data at each index along the direction of the move and a possible tile to be added to the board between the moves.
+    pub history: History
 }
 
 impl Recording{
+
+    /// Converts the recording back to a format the [parser](crate::parser) can read.
     pub fn to_string(&self) -> String{
         let mut out = "".to_owned();
         let mut index: usize = 0;
@@ -36,6 +49,9 @@ impl Recording{
         }
         return out;
     }
+
+    /// Returns a hash of the history. The hash is only composed from the move directions and is not affected by any board data changes.
+    /// This is far cheaper and invalid board data or score changes should be catched by the [validator](crate::validator) anyways.
     #[cfg(feature = "history_hash")]
     pub fn hash_v1(&self) -> String {
         use sha2::{Sha256, Digest};

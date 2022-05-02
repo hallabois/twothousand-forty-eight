@@ -1,3 +1,5 @@
+//! Provides functions to validate a [Recording](crate::recording::Recording)
+
 use crate::direction;
 use crate::recording::Recording;
 use crate::direction::Direction;
@@ -5,8 +7,10 @@ use crate::board::Board;
 use crate::board::is_move_possible;
 use crate::board::print_board;
 
+/// the validator will stop validating history beyond [MAX_HISTORY_LENGTH]
 const MAX_HISTORY_LENGTH: usize = usize::MAX;
 
+/// Validates the history continuity and returns the determined validity, score, possible score margin (caused when the last game move was not recorded) and break count.
 pub fn validate_history(history: Recording) -> (bool, usize, usize, usize) { // Valid, score, possible score margin, breaks
     let mut score: usize = 0;
     let mut score_margin: usize = 0;
@@ -80,6 +84,7 @@ pub fn validate_history(history: Recording) -> (bool, usize, usize, usize) { // 
     return (true, score, score_margin, breaks);
 }
 
+/// Makes sure that the starting state of the history doesn't contain too many tiles or tiles with a too big value.
 pub fn validate_first_move(history: &Recording) -> bool {
     let history_len = history.history.len();
     if history_len > 0{
@@ -93,6 +98,7 @@ pub fn validate_first_move(history: &Recording) -> bool {
     return false;
 }
 
+/// Returns the accumulated score of a run (should match the score displayed in the game)
 pub fn get_run_score(history: &Recording) -> usize{
     let mut score: usize = 0;
     for i in &history.history{
