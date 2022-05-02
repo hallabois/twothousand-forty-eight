@@ -47,7 +47,7 @@ mod parser {
     #[test]
     fn works_4x4(){
         use lib_testgames::GAME4X4;
-        let history4x4 = parser::parse_data(String::from(GAME4X4));
+        let history4x4 = parser::parse_data(String::from(GAME4X4)).unwrap();
         assert_eq!(history4x4.width, 4);
         assert_eq!(history4x4.height, 4);
         assert_eq!(history4x4.history.len(), 576);
@@ -56,7 +56,7 @@ mod parser {
     #[test]
     fn works_3x3(){
         use lib_testgames::GAME3X3;
-        let history4x4 = parser::parse_data(String::from(GAME3X3));
+        let history4x4 = parser::parse_data(String::from(GAME3X3)).unwrap();
         assert_eq!(history4x4.width, 3);
         assert_eq!(history4x4.height, 3);
         assert_eq!(history4x4.history.len(), 500);
@@ -76,7 +76,7 @@ mod validator {
     #[test]
     fn works_normal_4x4_0breaks_a() {
         use lib_testgames::GAME4X4B;
-        let history = parser::parse_data(String::from(GAME4X4B));
+        let history = parser::parse_data(String::from(GAME4X4B)).unwrap();
         let first_move_valid = validator::validate_first_move(&history);
         assert_eq!(first_move_valid, true);
         let (result1, score, score_margin, breaks) = validator::validate_history(history);
@@ -87,7 +87,7 @@ mod validator {
     #[test]
     fn works_normal_4x4_0breaks_b() {
         use lib_testgames::GAME4X4C;
-        let history = parser::parse_data(String::from(GAME4X4C));
+        let history = parser::parse_data(String::from(GAME4X4C)).unwrap();
         let first_move_valid = validator::validate_first_move(&history);
         assert_eq!(first_move_valid, true);
         let (result1, score, score_margin, breaks) = validator::validate_history(history);
@@ -98,7 +98,7 @@ mod validator {
     #[test]
     fn works_normal_4x4_2breaks() {
         use lib_testgames::GAME4X4;
-        let history = parser::parse_data(String::from(GAME4X4));
+        let history = parser::parse_data(String::from(GAME4X4)).unwrap();
         let first_move_valid = validator::validate_first_move(&history);
         assert_eq!(first_move_valid, true);
         let (result1, score, score_margin, breaks) = validator::validate_history(history);
@@ -109,7 +109,7 @@ mod validator {
     #[test]
     fn works_normal_3x3_0breaks_a() {
         use lib_testgames::GAME3X3;
-        let history = parser::parse_data(String::from(GAME3X3));
+        let history = parser::parse_data(String::from(GAME3X3)).unwrap();
         let first_move_valid = validator::validate_first_move(&history);
         assert_eq!(first_move_valid, true);
         let (result1, score, score_margin, breaks) = validator::validate_history(history);
@@ -120,7 +120,7 @@ mod validator {
     #[test]
     fn works_normal_3x3_0breaks_b() {
         use lib_testgames::GAME3X3B;
-        let history = parser::parse_data(String::from(GAME3X3B));
+        let history = parser::parse_data(String::from(GAME3X3B)).unwrap();
         let first_move_valid = validator::validate_first_move(&history);
         assert_eq!(first_move_valid, true);
         let (result1, score, score_margin, breaks) = validator::validate_history(history);
@@ -131,7 +131,7 @@ mod validator {
     #[test]
     fn works_looong_4x4_0breaks() {
         use lib_testgames::GAMEOBSCENE;
-        let history = parser::parse_data(String::from(GAMEOBSCENE));
+        let history = parser::parse_data(String::from(GAMEOBSCENE)).unwrap();
         let first_move_valid = validator::validate_first_move(&history);
         assert_eq!(first_move_valid, true);
         let (result1, score, score_margin, breaks) = validator::validate_history(history);
@@ -150,7 +150,7 @@ mod history_hash {
     #[test]
     fn history_hash_works() {
         use lib_testgames::GAME4X4;
-        let history = parser::parse_data(String::from(GAME4X4));
+        let history = parser::parse_data(String::from(GAME4X4)).unwrap();
         assert_eq!(history.hash_v1(), String::from("9CAC2643E4E5F66E18FD9150320471F016CAF69FA3865A6DAE1DD9726F6792F5"));
     }
 }
