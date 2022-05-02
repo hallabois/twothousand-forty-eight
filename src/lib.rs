@@ -65,6 +65,10 @@ pub fn apply_move(board_data: &str, dir: usize, add_random: bool) -> String {
     return serde_json::to_string(&result).unwrap();
 }
 
+#[cfg(feature = "add_random")]
+use rand::prelude::SliceRandom;
+
+#[cfg(feature = "add_random")]
 pub fn add_random_to_board(board: &mut board::Board) {
     let mut possible = board.get_non_occupied_tiles();
     if possible.len() > 0 {
