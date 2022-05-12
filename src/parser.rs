@@ -39,7 +39,7 @@ pub fn parse_data(data: String) -> Option<Recording> {
         }
         let b = *bdata.get(0)?;
         let mut board = create_tiles(width,height);
-        let dir = parts[1];
+        let dir = parts.get(1)?;
         let direction = Direction::from_index_str(dir);
         let mut index: usize = 0;
         for i in b.split("."){
