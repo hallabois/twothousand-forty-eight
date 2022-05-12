@@ -3,7 +3,7 @@
 pub mod tile;
 use tile::Tile;
 use crate::direction::Direction;
-#[cfg(feature = "wasm")]
+#[cfg(feature = "serde_derive")]
 use serde::{Serialize, Deserialize};
 
 /// Max width of a board the program can handle. Be careful when increasing, as this increases memory use expotentially.
@@ -14,7 +14,7 @@ pub const MAX_HEIGHT: usize = 6;
 
 /// Holds game board data
 #[derive(Debug, Copy, Clone)]
-#[cfg_attr(feature = "wasm", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde_derive", derive(Serialize, Deserialize))]
 pub struct Board{
     /// The width of the board. Value of 0 is untested
     pub width: usize,

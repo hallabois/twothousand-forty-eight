@@ -1,11 +1,11 @@
 //! Provides [Direction] to represent move directions
 
-#[cfg(feature = "wasm")]
+#[cfg(feature = "serde_derive")]
 use serde::{Serialize, Deserialize};
 
 /// A representation of the possible move directions during the game.
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[cfg_attr(feature = "wasm", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde_derive", derive(Serialize, Deserialize))]
 pub enum Direction{
     /// The game was just started and no move was made on the first frame. Not possible in a real game but some functions need this.
     START,
