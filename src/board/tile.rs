@@ -50,11 +50,14 @@ impl Tile{
     }
 
     /// Gives a representation of the tile that is compatible with our anticheat systems
-    /// TODO: move to an implementation
+    /// TODO: move to a separate implementation
     pub fn oispahalla_serialize(&self) -> String{
         if self.value == 0{
             return String::from("null");
         }
+        #[cfg(feature = "tile_id")]
+        return format!("{{\"position\":{{\"x\":{},\"y\":{}}},\"value\":{},\"id\":{}}}", self.y, self.x, self.value, self.id);
+        #[cfg(not(feature = "tile_id"))]
         return format!("{{\"position\":{{\"x\":{},\"y\":{}}},\"value\":{}}}", self.y, self.x, self.value);
     }
 
