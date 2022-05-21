@@ -3,7 +3,7 @@
 pub mod tile;
 use tile::Tile;
 use crate::direction::Direction;
-#[cfg(feature = "wasm")]
+#[cfg(feature = "serde_derive")]
 use serde::{Serialize, Deserialize};
 
 /// Max width of a board the program can handle. Be careful when increasing, as this increases memory use expotentially.
@@ -14,7 +14,7 @@ pub const MAX_HEIGHT: usize = 6;
 
 /// Holds game board data
 #[derive(Debug, Copy, Clone)]
-#[cfg_attr(feature = "wasm", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde_derive", derive(Serialize, Deserialize))]
 pub struct Board{
     /// The width of the board. Value of 0 is untested
     pub width: usize,
@@ -311,8 +311,11 @@ pub fn is_move_possible(board: Board, dir: Direction) -> ( [[Option<Tile>; MAX_W
             match board.tiles[y][x] {
                 None => if crate::DEBUG_INFO {println!("Error (pt. 6)")},
                 Some(t2) => {
+                    #[cfg(not(feature = "tile_id"))]
+                    let t = Tile::new(t2.x, t2.y, t2.value, false);
+                    #[cfg(feature = "tile_id")]
                     let mut t = Tile::new(t2.x, t2.y, t2.value, false);
-                    #[cfg(feature = "history_hash")]
+                    #[cfg(feature = "tile_id")]
                     {
                         t.id = t2.id;
                     }
@@ -369,8 +372,11 @@ pub fn is_move_possible(board: Board, dir: Direction) -> ( [[Option<Tile>; MAX_W
                 let farthest_free = get_farthest_tile(*t, &all_tiles, dir_to_use , 0);
 
                 if farthest_free != *t {
+                    #[cfg(not(feature = "tile_id"))]
+                    let new_tile = Tile::new(farthest_free.x, farthest_free.y, t.value, false);
+                    #[cfg(feature = "tile_id")]
                     let mut new_tile = Tile::new(farthest_free.x, farthest_free.y, t.value, false);
-                    #[cfg(feature = "history_hash")]
+                    #[cfg(feature = "tile_id")]
                     {
                         new_tile.id = t.id;
                     }
@@ -393,11 +399,11 @@ pub fn is_move_possible(board: Board, dir: Direction) -> ( [[Option<Tile>; MAX_W
                 None => if crate::DEBUG_INFO {println!("Error (pt. 9)")},
                 Some(t2) => {
                     let nt: Tile;
-                    #[cfg(feature = "history_hash")]
+                    #[cfg(feature = "tile_id")]
                     {
                         nt = Tile{x: t2.x, y: t2.y, value: t2.value, merged: false, id: t2.id};
                     }
-                    #[cfg(not(feature = "history_hash"))]
+                    #[cfg(not(feature = "tile_id"))]
                     {
                         nt = Tile{x: t2.x, y: t2.y, value: t2.value, merged: false};
                     }

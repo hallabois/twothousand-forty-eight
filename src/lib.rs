@@ -27,7 +27,7 @@ pub fn parse(data: &str) -> String {
 #[cfg(feature = "wasm")]
 #[wasm_bindgen]
 pub fn get_frames(data: &str) -> String {
-    let parsed = parser::parse_data(String::from(data));
+    let parsed = parser::parse_data(String::from(data)).unwrap();
     let out = parsed.history.iter().map(|x| {
         let board = board::Board{ width: parsed.width, height: parsed.height, tiles: x.0 };
         board.oispahalla_serialize()
@@ -38,7 +38,7 @@ pub fn get_frames(data: &str) -> String {
 #[cfg(feature = "wasm")]
 #[wasm_bindgen]
 pub fn validate(data: &str) -> String {
-    let parsed = parser::parse_data(String::from(data));
+    let parsed = parser::parse_data(String::from(data)).unwrap();
     // let first_move_valid = validator::validate_first_move(&parsed);
     let history_valid = validator::validate_history(parsed);
     return serde_json::to_string(&history_valid).unwrap();
@@ -65,6 +65,10 @@ pub fn apply_move(board_data: &str, dir: usize, add_random: bool) -> String {
     return serde_json::to_string(&result).unwrap();
 }
 
+#[cfg(feature = "add_random")]
+use rand::prelude::SliceRandom;
+
+#[cfg(feature = "add_random")]
 pub fn add_random_to_board(board: &mut board::Board) {
     let mut possible = board.get_non_occupied_tiles();
     if possible.len() > 0 {
@@ -88,7 +92,7 @@ pub fn add_random(board_data: &str) -> String {
 #[cfg(all(feature = "wasm", feature = "history_hash"))]
 #[wasm_bindgen]
 pub fn hash(data: &str) -> String {
-    let parsed = parser::parse_data(String::from(data));
+    let parsed = parser::parse_data(String::from(data)).unwrap();
     return serde_json::to_string(&parsed.hash_v1()).unwrap();
 }
 

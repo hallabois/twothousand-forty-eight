@@ -5,14 +5,14 @@ use crate::board::MAX_WIDTH;
 use crate::board::MAX_HEIGHT;
 use crate::direction::Direction;
 
-#[cfg(feature = "wasm")]
+#[cfg(feature = "serde_derive")]
 use serde::{Serialize, Deserialize};
 
 pub type History = Vec<( [[Option<Tile>; MAX_WIDTH]; MAX_HEIGHT], Direction, Option<Tile> )>;
 
 /// Represents a recording of a played game of 2048, usually parsed from a string with [parser](crate::parser).
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "wasm", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde_derive", derive(Serialize, Deserialize))]
 pub struct Recording{
 
     /// The width of the recorded game

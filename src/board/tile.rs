@@ -1,4 +1,4 @@
-#[cfg(feature = "wasm")]
+#[cfg(feature = "serde_derive")]
 use serde::{Serialize, Deserialize};
 #[cfg(feature = "tile_id")]
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -7,7 +7,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 /// 
 /// If the feature "tile_id" is enabled, all the tiles are assigned a unique id, which is preserved in the history (excluding merges)
 #[derive(Debug, Copy, Clone)]
-#[cfg_attr(feature = "wasm", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde_derive", derive(Serialize, Deserialize))]
 #[cfg_attr(not(feature = "tile_id"), derive(PartialEq))]
 pub struct Tile{
 

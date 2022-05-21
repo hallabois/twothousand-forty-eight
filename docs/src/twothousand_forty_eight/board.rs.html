@@ -414,6 +414,12 @@
 <span id="409">409</span>
 <span id="410">410</span>
 <span id="411">411</span>
+<span id="412">412</span>
+<span id="413">413</span>
+<span id="414">414</span>
+<span id="415">415</span>
+<span id="416">416</span>
+<span id="417">417</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Provides [Board] to hold game board data and [tile] to hold the values of the board tiles.</span>
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">tile</span>;
@@ -727,8 +733,11 @@
             <span class="kw">match</span> <span class="ident">board</span>.<span class="ident">tiles</span>[<span class="ident">y</span>][<span class="ident">x</span>] {
                 <span class="prelude-val">None</span> =&gt; <span class="kw">if</span> <span class="ident"><span class="kw">crate</span>::DEBUG_INFO</span> {<span class="macro">println!</span>(<span class="string">&quot;Error (pt. 6)&quot;</span>)},
                 <span class="prelude-val">Some</span>(<span class="ident">t2</span>) =&gt; {
+                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tile_id&quot;</span>))]</span>
+                    <span class="kw">let</span> <span class="ident">t</span> <span class="op">=</span> <span class="ident">Tile::new</span>(<span class="ident">t2</span>.<span class="ident">x</span>, <span class="ident">t2</span>.<span class="ident">y</span>, <span class="ident">t2</span>.<span class="ident">value</span>, <span class="bool-val">false</span>);
+                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tile_id&quot;</span>)]</span>
                     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">t</span> <span class="op">=</span> <span class="ident">Tile::new</span>(<span class="ident">t2</span>.<span class="ident">x</span>, <span class="ident">t2</span>.<span class="ident">y</span>, <span class="ident">t2</span>.<span class="ident">value</span>, <span class="bool-val">false</span>);
-                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;history_hash&quot;</span>)]</span>
+                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tile_id&quot;</span>)]</span>
                     {
                         <span class="ident">t</span>.<span class="ident">id</span> <span class="op">=</span> <span class="ident">t2</span>.<span class="ident">id</span>;
                     }
@@ -785,8 +794,11 @@
                 <span class="kw">let</span> <span class="ident">farthest_free</span> <span class="op">=</span> <span class="ident">get_farthest_tile</span>(<span class="kw-2">*</span><span class="ident">t</span>, <span class="kw-2">&amp;</span><span class="ident">all_tiles</span>, <span class="ident">dir_to_use</span> , <span class="number">0</span>);
 
                 <span class="kw">if</span> <span class="ident">farthest_free</span> <span class="op">!</span><span class="op">=</span> <span class="kw-2">*</span><span class="ident">t</span> {
+                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tile_id&quot;</span>))]</span>
+                    <span class="kw">let</span> <span class="ident">new_tile</span> <span class="op">=</span> <span class="ident">Tile::new</span>(<span class="ident">farthest_free</span>.<span class="ident">x</span>, <span class="ident">farthest_free</span>.<span class="ident">y</span>, <span class="ident">t</span>.<span class="ident">value</span>, <span class="bool-val">false</span>);
+                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tile_id&quot;</span>)]</span>
                     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">new_tile</span> <span class="op">=</span> <span class="ident">Tile::new</span>(<span class="ident">farthest_free</span>.<span class="ident">x</span>, <span class="ident">farthest_free</span>.<span class="ident">y</span>, <span class="ident">t</span>.<span class="ident">value</span>, <span class="bool-val">false</span>);
-                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;history_hash&quot;</span>)]</span>
+                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tile_id&quot;</span>)]</span>
                     {
                         <span class="ident">new_tile</span>.<span class="ident">id</span> <span class="op">=</span> <span class="ident">t</span>.<span class="ident">id</span>;
                     }
@@ -809,11 +821,11 @@
                 <span class="prelude-val">None</span> =&gt; <span class="kw">if</span> <span class="ident"><span class="kw">crate</span>::DEBUG_INFO</span> {<span class="macro">println!</span>(<span class="string">&quot;Error (pt. 9)&quot;</span>)},
                 <span class="prelude-val">Some</span>(<span class="ident">t2</span>) =&gt; {
                     <span class="kw">let</span> <span class="ident">nt</span>: <span class="ident">Tile</span>;
-                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;history_hash&quot;</span>)]</span>
+                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tile_id&quot;</span>)]</span>
                     {
                         <span class="ident">nt</span> <span class="op">=</span> <span class="ident">Tile</span>{<span class="ident">x</span>: <span class="ident">t2</span>.<span class="ident">x</span>, <span class="ident">y</span>: <span class="ident">t2</span>.<span class="ident">y</span>, <span class="ident">value</span>: <span class="ident">t2</span>.<span class="ident">value</span>, <span class="ident">merged</span>: <span class="bool-val">false</span>, <span class="ident">id</span>: <span class="ident">t2</span>.<span class="ident">id</span>};
                     }
-                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;history_hash&quot;</span>))]</span>
+                    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;tile_id&quot;</span>))]</span>
                     {
                         <span class="ident">nt</span> <span class="op">=</span> <span class="ident">Tile</span>{<span class="ident">x</span>: <span class="ident">t2</span>.<span class="ident">x</span>, <span class="ident">y</span>: <span class="ident">t2</span>.<span class="ident">y</span>, <span class="ident">value</span>: <span class="ident">t2</span>.<span class="ident">value</span>, <span class="ident">merged</span>: <span class="bool-val">false</span>};
                     }
@@ -826,5 +838,5 @@
     <span class="kw">return</span> (<span class="ident">universe</span>, <span class="ident">was_changed</span>, <span class="ident">score</span>);
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="twothousand_forty_eight" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.0-nightly (6dd68402c 2022-05-11)" ></div>
+</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="twothousand_forty_eight" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.0-nightly (52ca603da 2022-04-12)" ></div>
 </body></html>
