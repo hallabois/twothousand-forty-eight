@@ -11,11 +11,11 @@ pub mod recording;
 
 pub const DEBUG_INFO: bool = false;
 
+#[cfg(feature = "add_random")]
+use board::tile;
 
 #[cfg(feature = "wasm")]
 use wasm_bindgen::prelude::*;
-#[cfg(feature = "wasm")]
-use rand::prelude::*;
 
 #[cfg(feature = "wasm")]
 #[wasm_bindgen]
@@ -69,14 +69,28 @@ pub fn apply_move(board_data: &str, dir: usize, add_random: bool) -> String {
 use rand::prelude::SliceRandom;
 
 #[cfg(feature = "add_random")]
-pub fn add_random_to_board(board: &mut board::Board) {
+pub fn get_random_tile_to_add(board: &board::Board) -> Option<tile::Tile> {
+
     let mut possible = board.get_non_occupied_tiles();
     if possible.len() > 0 {
         possible.shuffle(&mut rand::thread_rng());
         let t = possible[0];
         let mut possible_values = vec![2, 2, 2, 4];
         possible_values.shuffle(&mut rand::thread_rng());
-        board.set_tile(t.x, t.y, possible_values[0]);
+
+        return Some(tile::Tile::new(t.x, t.y, possible_values[0], false));
+    }
+    None
+}
+
+#[cfg(feature = "add_random")]
+pub fn add_random_to_board(board: &mut board::Board) {
+    let possible_t = get_random_tile_to_add(board);
+    match possible_t {
+        None => {},
+        Some(t) => {
+            board.set_tile(t.x, t.y, t.value);
+        },
     }
 }
 
