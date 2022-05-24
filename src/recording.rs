@@ -11,7 +11,7 @@ use serde::{Serialize, Deserialize};
 pub type History = Vec<( [[Option<Tile>; MAX_WIDTH]; MAX_HEIGHT], Direction, Option<Tile> )>;
 
 /// Represents a recording of a played game of 2048, usually parsed from a string with [parser](crate::parser).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde_derive", derive(Serialize, Deserialize))]
 pub struct Recording{
 
