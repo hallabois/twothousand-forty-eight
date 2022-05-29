@@ -4,7 +4,7 @@
 use serde::{Serialize, Deserialize};
 
 /// A representation of the possible move directions during the game.
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serde_derive", derive(Serialize, Deserialize))]
 pub enum Direction{
     /// The game was just started and no move was made on the first frame. Not possible in a real game but some functions need this.
