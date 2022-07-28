@@ -30,3 +30,7 @@ wasm = ["serde_derive", "wasm-bindgen", "getrandom", "rand"]
 add_random = ["getrandom", "rand"]
 tile_id = []
 tile_merged_from = [ "tile_id" ]
+
+[profile.release]
+strip = true  # Automatically strip symbols from the binary.
+lto = true
