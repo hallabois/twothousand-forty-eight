@@ -1,6 +1,6 @@
 [package]
 name = "twothousand-forty-eight"
-version = "0.3.1"
+version = "0.4.0"
 edition = "2021"
 authors = ["xypine <elias.eskelinen@pm.me>"]
 license = "MIT"
@@ -23,9 +23,10 @@ getrandom = { version = "0.2", features = ["js"], optional = true }
 rand = {version = "0.8.4", optional = true}
 
 [features]
-default = ["history_hash", "tile_id", "wasm", "add_random"]
+default = ["history_hash", "tile_id", "tile_merged_from", "wasm", "add_random"]
 history_hash = ["sha2"]
 serde_derive = ["serde", "serde_json"]
 wasm = ["serde_derive", "wasm-bindgen", "getrandom", "rand"]
 add_random = ["getrandom", "rand"]
 tile_id = []
+tile_merged_from = [ "tile_id" ]

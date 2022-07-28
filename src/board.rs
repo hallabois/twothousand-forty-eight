@@ -398,14 +398,15 @@ pub fn is_move_possible(board: Board, dir: Direction) -> ( [[Option<Tile>; MAX_W
             match universe[y][x] {
                 None => if crate::DEBUG_INFO {println!("Error (pt. 9)")},
                 Some(t2) => {
+                    #[cfg(not(feature = "tile_id"))]
                     let nt: Tile;
                     #[cfg(feature = "tile_id")]
+                    let mut nt: Tile;
+
+                    nt = Tile::new(t2.x, t2.y, t2.value, false);
+                    #[cfg(feature = "tile_id")]
                     {
-                        nt = Tile{x: t2.x, y: t2.y, value: t2.value, merged: false, id: t2.id};
-                    }
-                    #[cfg(not(feature = "tile_id"))]
-                    {
-                        nt = Tile{x: t2.x, y: t2.y, value: t2.value, merged: false};
+                        nt.id = t2.id;
                     }
                     universe[y][x] = Some( nt );
                 }

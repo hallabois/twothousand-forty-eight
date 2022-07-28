@@ -26,6 +26,9 @@ pub struct Tile{
     /// a unique identifier for the tile, not preserved when tiles merge together
     #[cfg(feature = "tile_id")]
     pub id: usize,
+
+    #[cfg(feature = "tile_merged_from")]
+    pub merged_from: Option<[usize; 2]>
 }
 
 #[cfg(feature = "tile_id")]
@@ -40,12 +43,14 @@ impl Tile{
     /// Create a new tile. If the "tile_id" feature is enabled, a new unique identifier will be assigned to the generated tile.
     pub fn new(x: usize, y: usize, value: usize, merged: bool) -> Tile{
         Tile{
-            x: x,
-            y: y,
-            value: value,
-            merged: merged,
+            x,
+            y,
+            value,
+            merged,
             #[cfg(feature = "tile_id")]
             id: Tile::get_new_id(),
+            #[cfg(feature = "tile_merged_from")]
+            merged_from: None
         }
     }
 

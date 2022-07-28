@@ -1,1 +1,0 @@
-initSidebarItems({"struct":[["Tile","Tile is a basic representation of the tiles on the game board."]]});
