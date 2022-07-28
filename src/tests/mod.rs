@@ -154,3 +154,49 @@ mod history_hash {
         assert_eq!(history.hash_v1(), String::from("9CAC2643E4E5F66E18FD9150320471F016CAF69FA3865A6DAE1DD9726F6792F5"));
     }
 }
+
+#[cfg(test)]
+#[cfg(feature = "tile_merged_from")]
+mod tile_merged_from {
+    use crate::board;
+    use board::Board;
+    // use board::tile::Tile;
+
+    #[test]
+    fn tile_merged_from_works_4x4() {
+        let mut game = Board::new();
+        game.set_tile(0, 0, 4);
+        let t1 = game.tiles[0][0].unwrap();
+        game.set_tile(1, 0, 4);
+        let t2 = game.tiles[0][1].unwrap();
+        println!("Starting board:");
+        board::print_board(game.tiles, 4, 4);
+
+        let (new_tiles, possible, _scoregain) = board::is_move_possible(game, crate::direction::Direction::LEFT);
+        assert!(possible);
+
+        println!("Board on next move:");
+        board::print_board(new_tiles, 4, 4);
+
+        let nt = new_tiles[0][0].unwrap();
+
+        assert_ne!(t1.id, nt.id);
+        assert_ne!(t2.id, nt.id);
+        println!("nt merged from: {:?}", nt.merged_from);
+        assert!(nt.merged_from == Some([t1.id, t2.id]) || nt.merged_from == Some([t2.id, t1.id]));
+
+        game.tiles = new_tiles;
+        let (new_tiles, possible, _scoregain) = board::is_move_possible(game, crate::direction::Direction::RIGHT);
+        assert!(possible);
+
+        println!("Board on next move:");
+        board::print_board(new_tiles, 4, 4);
+
+        let nt = new_tiles[0][0].unwrap();
+
+        assert_ne!(t1.id, nt.id);
+        assert_ne!(t2.id, nt.id);
+        println!("nt merged from: {:?}", nt.merged_from);
+        assert!(nt.merged_from.is_none());
+    }
+}

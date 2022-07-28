@@ -38,7 +38,7 @@ impl Board{
     }
 
     /// Set a tile on the board and silently fail if the target tile doesn't exist and [DEBUG_INFO](crate::DEBUG_INFO) is disabled.
-    pub fn set_tile(&mut self, x: usize, y: usize, val: usize){
+    pub fn set_tile(&mut self, x: usize, y: usize, val: usize) {
         if let Some(i) = self.tiles[y][x] {
             self.tiles[y][x] = Some(Tile::new(x, y,val, i.merged));
         } else {
@@ -170,13 +170,13 @@ pub fn board_to_string(tiles: [[Option<tile::Tile>; MAX_WIDTH]; MAX_HEIGHT], wid
 }
 
 /// Initialize an array of empty tiles created with [Tile::new]
-pub fn create_tiles(width: usize, heigth: usize) -> [[Option<Tile>; MAX_WIDTH]; MAX_HEIGHT] {
-    if width > MAX_WIDTH || heigth > MAX_HEIGHT {
+pub fn create_tiles(width: usize, height: usize) -> [[Option<Tile>; MAX_WIDTH]; MAX_HEIGHT] {
+    if width > MAX_WIDTH || height > MAX_HEIGHT {
         panic!("Board size too big! This version of the program has been compiled to support the maximum size of {:?}", (MAX_WIDTH, MAX_HEIGHT));
     }
     let mut tiles: [[Option<Tile>; MAX_WIDTH]; MAX_HEIGHT] = [[None; MAX_WIDTH]; MAX_HEIGHT];
     for x in 0..width{
-        for y in 0..heigth{
+        for y in 0..height{
             tiles[y][x] = Some(Tile::new(x, y, 0, false));
         }
     }
@@ -312,12 +312,19 @@ pub fn is_move_possible(board: Board, dir: Direction) -> ( [[Option<Tile>; MAX_W
                 None => if crate::DEBUG_INFO {println!("Error (pt. 6)")},
                 Some(t2) => {
                     #[cfg(not(feature = "tile_id"))]
-                    let t = Tile::new(t2.x, t2.y, t2.value, false);
+                    let t: Tile;
                     #[cfg(feature = "tile_id")]
-                    let mut t = Tile::new(t2.x, t2.y, t2.value, false);
+                    let mut t: Tile;
+
+                    t = Tile::new(t2.x, t2.y, t2.value, false);
+
                     #[cfg(feature = "tile_id")]
                     {
                         t.id = t2.id;
+                    }
+                    #[cfg(feature = "tile_merged_from")]
+                    {
+                        t.merged_from = t2.merged_from;
                     }
                     universe[t2.y][t2.x] = Some( t );
                 }
@@ -332,7 +339,6 @@ pub fn is_move_possible(board: Board, dir: Direction) -> ( [[Option<Tile>; MAX_W
     for _r in 0..32{
         let b = Board{tiles: universe, height: board.height, width: board.width};
         let occupied_tiles= b.get_occupied_tiles();
-        //println!("Occupied tiles: {}", occupied_tiles.len());
         for t in &occupied_tiles{
             if merged_tiles.contains( &(t.x, t.y) ) || t.merged {
                 // Do nothing
@@ -342,7 +348,18 @@ pub fn is_move_possible(board: Board, dir: Direction) -> ( [[Option<Tile>; MAX_W
                 if t != &closest && t.value == closest.value && !merged_tiles.contains( &(closest.x, closest.y) ) && !closest.merged {
                     
                     universe[t.y][t.x] = Some( Tile::new(t.x, t.y, 0, false) );
-                    let merged = Tile::new(closest.x, closest.y, closest.value*2, true);
+
+                    #[cfg(not(feature = "tile_merged_from"))]
+                    let merged: Tile;
+                    #[cfg(feature = "tile_merged_from")]
+                    let mut merged: Tile;
+
+                    merged = Tile::new(closest.x, closest.y, closest.value*2, true);
+
+                    #[cfg(feature = "tile_merged_from")] {
+                        merged.merged_from = Some([t.id, closest.id]);
+                    }
+
                     score += merged.value;
                     universe[closest.y][closest.x] = Some( merged );
                     merged_tiles.push( (merged.x, merged.y) );
@@ -373,12 +390,19 @@ pub fn is_move_possible(board: Board, dir: Direction) -> ( [[Option<Tile>; MAX_W
 
                 if farthest_free != *t {
                     #[cfg(not(feature = "tile_id"))]
-                    let new_tile = Tile::new(farthest_free.x, farthest_free.y, t.value, false);
+                    let new_tile: Tile;
                     #[cfg(feature = "tile_id")]
-                    let mut new_tile = Tile::new(farthest_free.x, farthest_free.y, t.value, false);
+                    let mut new_tile: Tile;
+
+                    new_tile = Tile::new(farthest_free.x, farthest_free.y, t.value, false);
+
                     #[cfg(feature = "tile_id")]
                     {
                         new_tile.id = t.id;
+                    }
+                    #[cfg(feature = "tile_merged_from")]
+                    {
+                        new_tile.merged_from = t.merged_from;
                     }
 
                     universe[t.y][t.x] = Some( Tile::new(t.x, t.y, 0, false) );
@@ -407,6 +431,10 @@ pub fn is_move_possible(board: Board, dir: Direction) -> ( [[Option<Tile>; MAX_W
                     #[cfg(feature = "tile_id")]
                     {
                         nt.id = t2.id;
+                    }
+                    #[cfg(feature = "tile_merged_from")]
+                    {
+                        nt.merged_from = t2.merged_from;
                     }
                     universe[y][x] = Some( nt );
                 }
