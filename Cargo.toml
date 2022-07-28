@@ -1,13 +1,13 @@
 [package]
 name = "twothousand-forty-eight"
-version = "0.4.1"
+version = "0.4.2"
 edition = "2021"
 authors = ["xypine <elias.eskelinen@pm.me>"]
 license = "MIT"
 keywords = ["2048", "game"]
 description = "a basic engine and move validator for the game 2048"
 repository = "https://github.com/hallabois/twothousand-forty-eight"
-documentation = "https://hallabois.github.io/twothousand-forty-eight/"
+documentation = "https://docs.rs/twothousand_forty_eight"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
