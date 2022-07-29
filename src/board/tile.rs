@@ -57,7 +57,7 @@ impl Tile{
     /// Gives a json representation of the tile that is compatible with our anticheat systems
     #[cfg(feature = "serde_derive")]
     pub fn to_json(&self) -> String{
-        if self.value == 0{
+        if self.value == 0 {
             return String::from("null");
         }
         serde_json::to_string(self).unwrap()

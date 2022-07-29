@@ -145,6 +145,7 @@ mod validator {
 #[cfg(feature = "serde_derive")]
 mod serializers {
     use crate::board::tile::Tile;
+    use regex::Regex;
 
     #[test]
     fn tile_serializer_null() {
@@ -158,7 +159,11 @@ mod serializers {
     fn tile_serializer_some() {
         let t = Tile::new(0, 1, 4, false);
 
-        assert_eq!(t.to_json(), "{\"x\":0,\"y\":1,\"value\":4,\"merged\":false,\"id\":452,\"merged_from\":null}");
+        let re = Regex::new("\\{\"x\":0,\"y\":1,\"value\":4,\"merged\":false,\"id\":[0-9]+,\"merged_from\":null\\}").unwrap();
+
+        println!("Matching against: {}", t.to_json());
+
+        assert!(re.is_match(&t.to_json()));
     }
 }
 
