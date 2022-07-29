@@ -99,7 +99,7 @@ pub fn validate_first_move(history: &Recording) -> bool {
 }
 
 /// Returns the accumulated score of a run (should match the score displayed in the game)
-pub fn get_run_score(history: &Recording) -> usize{
+pub fn get_run_score(history: &Recording) -> usize {
     let mut score: usize = 0;
     for i in &history.history{
         let board = i.0;

@@ -7,10 +7,10 @@ use crate::direction::Direction;
 use serde::{Serialize, Deserialize};
 
 /// Max width of a board the program can handle. Be careful when increasing, as this increases memory use expotentially.
-pub const MAX_WIDTH: usize = 6;
+pub const MAX_WIDTH: usize = 5;
 
 /// Max height of a board the program can handle. Be careful when increasing, as this increases memory use expotentially.
-pub const MAX_HEIGHT: usize = 6;
+pub const MAX_HEIGHT: usize = 5;
 
 /// Holds game board data
 #[derive(Debug, Copy, Clone)]
@@ -68,8 +68,8 @@ impl Board{
     /// Get the tiles that exist and which's values are zero
     pub fn get_non_occupied_tiles(&self) -> Vec<Tile> {
         let mut out: Vec<Tile> = vec![];
-        for y in 0..self.height{
-            for x in 0..self.width{
+        for y in 0..self.height {
+            for x in 0..self.width {
                 let t = self.tiles[y][x];
                 match t{
                     Some(tile) => (
@@ -188,7 +188,7 @@ pub fn create_tiles(width: usize, height: usize) -> [[Option<Tile>; MAX_WIDTH]; 
 }
 
 /// Return the closest tile with the value of "mask" to the tile "t" in the given direction "dir", if "t" is returned, no such tile was found.
-pub fn get_closest_tile(t: Tile, viable_tiles: &Vec<Tile>, dir: Direction, mask: usize) -> Tile{ //if t is returned, an error occured along the way
+pub fn get_closest_tile(t: Tile, viable_tiles: &Vec<Tile>, dir: Direction, mask: usize) -> Tile { //if t is returned, an error occured along the way
     let dir_x = dir.get_x();
     let dir_y = dir.get_y();
 
@@ -221,7 +221,7 @@ pub fn get_closest_tile(t: Tile, viable_tiles: &Vec<Tile>, dir: Direction, mask:
             }
         }
     }
-    else { // A horizontal move
+    else if dir_x == 0 { // A horizontal move
         for i in viable_tiles{
             let condition = if dir_y > 0 { t.y < i.y } else { t.y > i.y };
             if (t.x == i.x) && condition {
@@ -276,7 +276,7 @@ pub fn get_farthest_tile(t: Tile, all_tiles: &Vec<Tile>, dir: Direction, mask: u
             }
         }
     }
-    else { // A horizontal move
+    else if dir_x == 0 { // A horizontal move
         for i in all_tiles{
             let condition = if dir_y > 0 { t.y < i.y } else { t.y > i.y };
             if (t.x == i.x) && condition {
@@ -303,8 +303,6 @@ pub fn is_move_possible(board: Board, dir: Direction) -> ( [[Option<Tile>; MAX_W
     if dir == Direction::END {
         return (board.tiles, true, 0);
     }
-
-    let _tiles = board.get_occupied_tiles();
 
     let mut was_changed = false;
 
