@@ -142,6 +142,27 @@ mod validator {
 }
 
 #[cfg(test)]
+#[cfg(feature = "serde_derive")]
+mod serializers {
+    use crate::board::tile::Tile;
+
+    #[test]
+    fn tile_serializer_null() {
+        let t = Tile::new(0, 0, 0, false);
+        assert_eq!(t.to_json(), "null");
+    }
+
+    #[test]
+    #[cfg(feature = "tile_merged_from")]
+    #[cfg(feature = "tile_id")]
+    fn tile_serializer_some() {
+        let t = Tile::new(0, 1, 4, false);
+
+        assert_eq!(t.to_json(), "{\"x\":0,\"y\":1,\"value\":4,\"merged\":false,\"id\":452,\"merged_from\":null}");
+    }
+}
+
+#[cfg(test)]
 #[cfg(feature = "history_hash")]
 mod history_hash {
     use super::lib_testgames;

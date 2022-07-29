@@ -115,12 +115,16 @@ impl Board{
         return sum;
     }
 
-    /// Gives a representation of the board that is compatible with our anticheat systems
-    /// TODO: move to an implementation
-    pub fn oispahalla_serialize(&self) -> String{
-        let arr = self.tiles.iter().map(|row| row.iter().map( |t| match t{Some(t)=>t.oispahalla_serialize(),None=>String::from("null")} ).collect::<Vec<String>>() ).collect::<Vec<Vec<String>>>();
+    /// Gives a string representation of the board that is compatible with our anticheat systems
+    #[cfg(feature = "serde_derive")]
+    pub fn oispahalla_serialize(&self, score: Option<usize>) -> String{
+        let score_str = match score {
+            Some(s) => s.to_string(),
+            None => String::from("SCOREHERE")
+        };
+        let arr = self.tiles.iter().map(|row| row.iter().map( |t| match t{Some(t)=>t.to_json(),None=>String::from("null")} ).collect::<Vec<String>>() ).collect::<Vec<Vec<String>>>();
         let arr_str = format!("[{}]", arr.iter().map( |row| row.join(",") ).collect::<Vec<String>>().iter().map(|s| format!("[{}]",s)).collect::<Vec<String>>().join(","));
-        let out = format!("{{\"grid\":{{\"size\":{},\"cells\":{}}},\"score\":SCOREHERE,\"palautukset\":0,\"over\":false,\"won\":false,\"keepPlaying\":false}}", usize::max(self.width, self.height) , arr_str);
+        let out = format!("{{\"grid\":{{\"size\":{},\"cells\":{}}},\"score\":{},\"palautukset\":0,\"over\":false,\"won\":false,\"keepPlaying\":false}}", usize::max(self.width, self.height) , arr_str, score_str);
         return out;
     }
 }

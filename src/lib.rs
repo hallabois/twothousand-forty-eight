@@ -30,7 +30,7 @@ pub fn get_frames(data: &str) -> String {
     let parsed = parser::parse_data(String::from(data)).unwrap();
     let out = parsed.history.iter().map(|x| {
         let board = board::Board{ width: parsed.width, height: parsed.height, tiles: x.0 };
-        board.oispahalla_serialize()
+        board.oispahalla_serialize(None)
     }).collect::<Vec<String>>();
     return serde_json::to_string(&out).unwrap();
 }

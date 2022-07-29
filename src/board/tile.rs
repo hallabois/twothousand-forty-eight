@@ -54,16 +54,13 @@ impl Tile{
         }
     }
 
-    /// Gives a representation of the tile that is compatible with our anticheat systems
-    /// TODO: move to a separate implementation
-    pub fn oispahalla_serialize(&self) -> String{
+    /// Gives a json representation of the tile that is compatible with our anticheat systems
+    #[cfg(feature = "serde_derive")]
+    pub fn to_json(&self) -> String{
         if self.value == 0{
             return String::from("null");
         }
-        #[cfg(feature = "tile_id")]
-        return format!("{{\"position\":{{\"x\":{},\"y\":{}}},\"value\":{},\"id\":{}}}", self.y, self.x, self.value, self.id);
-        #[cfg(not(feature = "tile_id"))]
-        return format!("{{\"position\":{{\"x\":{},\"y\":{}}},\"value\":{}}}", self.y, self.x, self.value);
+        serde_json::to_string(self).unwrap()
     }
 
     /// Provides a new identifier upon every call, essentially just incrementing the previous by one.
