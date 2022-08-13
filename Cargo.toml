@@ -24,6 +24,19 @@ rand = {version = "0.8.4", optional = true}
 
 [dev-dependencies]
 regex = "1.5"
+criterion = { version = "0.3", features = ["html_reports"] }
+
+[[bench]]
+name = "validator"
+harness = false
+
+[[bench]]
+name = "parser"
+harness = false
+
+[[bench]]
+name = "board"
+harness = false
 
 [features]
 default = ["history_hash", "tile_id", "tile_merged_from", "wasm", "add_random"]
