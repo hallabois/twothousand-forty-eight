@@ -53,12 +53,10 @@ impl Board{
             for x in 0..self.width{
                 let t = self.tiles[y][x];
                 match t{
-                    Some(tile) => (
-                        if tile.value != 0 {
+                    Some(tile) => if tile.value != 0 {
                             out.push(tile)
-                        }
-                    ),
-                    None => if crate::DEBUG_INFO {println!("Error! (pt. 2)")}
+                        },
+                    None => if crate::DEBUG_INFO {println!("WARN: None tile at {}, {}", x, y)}
                 }
             }
         }
@@ -72,12 +70,10 @@ impl Board{
             for x in 0..self.width {
                 let t = self.tiles[y][x];
                 match t{
-                    Some(tile) => (
-                        if tile.value == 0 {
+                    Some(tile) => if tile.value == 0 {
                             out.push(tile)
-                        }
-                    ),
-                    None => if crate::DEBUG_INFO {println!("Error! (pt. 2)")}
+                        },
+                    None => if crate::DEBUG_INFO {println!("WARN: None tile at {}, {}", x, y)}
                 }
             }
         }
@@ -91,10 +87,8 @@ impl Board{
             for x in 0..self.width{
                 let t = self.tiles[y][x];
                 match t{
-                    Some(tile) => (
-                        out.push(tile)
-                    ),
-                    None => if crate::DEBUG_INFO {println!("Error! (pt. 2)")}
+                    Some(tile) => out.push(tile),
+                    None => if crate::DEBUG_INFO {println!("WARN: None tile at {}, {}", x, y)}
                 }
             }
         }
@@ -197,51 +191,39 @@ pub fn get_closest_tile(t: Tile, viable_tiles: &Vec<Tile>, dir: Direction, mask:
     
     let mut nearest_block = usize::MAX;
 
-    if dir_y == 0{ // A vertical move
-        for i in viable_tiles{
-            let condition = if dir_x > 0 { t.x < i.x } else { t.x > i.x };
-            if (t.y == i.y) && condition {
-                let distance = if dir_x > 0 { i.x - t.x } else { t.x - i.x };
-                if distance != 0 && distance < closest_dist {
-                    let recursed = get_closest_tile(*i, viable_tiles, dir, mask);
-                    if recursed != *i && recursed.value == i.value && !recursed.merged{
-                        // Let this tile merge with the one in the direction of the move
-                        if !recursed.merged {
-                            nearest_block = distance;
-                        }
-                    }
-                    else{
-                        closest = *i;
-                        closest_dist = distance;
+    let move_is_vertical = dir_y == 0;
+
+    for i in viable_tiles{
+        let condition = if move_is_vertical {
+            if dir_x > 0 { t.x < i.x } else { t.x > i.x }
+        }
+        else {
+            if dir_y > 0 { t.y < i.y } else { t.y > i.y }
+        };
+
+        if ( if move_is_vertical {t.y == i.y} else {t.x == i.x} ) && condition {
+            let distance = if move_is_vertical {
+                if dir_x > 0 { i.x - t.x } else { t.x - i.x }
+            }
+            else {
+                if dir_y > 0 { i.y - t.y } else { t.y - i.y }
+            };
+
+            if distance != 0 && distance < closest_dist {
+                let recursed = get_closest_tile(*i, viable_tiles, dir, mask);
+                if recursed != *i && recursed.value == i.value && !recursed.merged{
+                    // Let this tile merge with the one in the direction of the move
+                    if !recursed.merged {
+                        nearest_block = distance;
                     }
                 }
-                else if distance != 0 && i.value != mask{
-                    //return t;
+                else{
+                    closest = *i;
+                    closest_dist = distance;
                 }
             }
-        }
-    }
-    else if dir_x == 0 { // A horizontal move
-        for i in viable_tiles{
-            let condition = if dir_y > 0 { t.y < i.y } else { t.y > i.y };
-            if (t.x == i.x) && condition {
-                let distance = if dir_y > 0 { i.y - t.y } else { t.y - i.y };
-                if distance != 0 && distance < closest_dist {
-                    let recursed = get_closest_tile(*i, viable_tiles, dir, mask);
-                    if recursed != *i && recursed.value == i.value && !recursed.merged{
-                        // Let this tile merge with the one in the direction of the move
-                        if !recursed.merged {
-                            nearest_block = distance;
-                        }
-                    }
-                    else{
-                        closest = *i;
-                        closest_dist = distance;
-                    }
-                }
-                else if distance != 0 && i.value != mask{
-                    //return t;
-                }
+            else if distance != 0 && i.value != mask{
+                //return t;
             }
         }
     }
@@ -261,33 +243,29 @@ pub fn get_farthest_tile(t: Tile, all_tiles: &Vec<Tile>, dir: Direction, mask: u
 
     let mut nearest_block = usize::MAX;
 
-    if dir_y == 0{ // A vertical move
-        for i in all_tiles{
-            let condition = if dir_x > 0 { t.x < i.x } else { t.x > i.x };
-            if (t.y == i.y) && condition {
-                let distance = if dir_x > 0 { i.x - t.x } else { t.x - i.x };
-                if distance != 0 && distance > farthest_dist && i.value == mask{
-                    farthest = *i;
-                    farthest_dist = distance;
-                }
-                else if distance != 0 && i.value != mask && distance < nearest_block{
-                    nearest_block = distance;
-                }
-            }
+    let move_is_vertical = dir_y == 0;
+
+    for i in all_tiles{
+        let condition = if move_is_vertical {
+            if dir_x > 0 { t.x < i.x } else { t.x > i.x }
         }
-    }
-    else if dir_x == 0 { // A horizontal move
-        for i in all_tiles{
-            let condition = if dir_y > 0 { t.y < i.y } else { t.y > i.y };
-            if (t.x == i.x) && condition {
-                let distance = if dir_y > 0 { i.y - t.y } else { t.y - i.y };
-                if distance != 0 && distance > farthest_dist && i.value == mask{
-                    farthest = *i;
-                    farthest_dist = distance;
-                }
-                else if distance != 0 && i.value != mask && distance < nearest_block{
-                    nearest_block = distance;
-                }
+        else {
+            if dir_y > 0 { t.y < i.y } else { t.y > i.y }
+        };
+        if ( if move_is_vertical {t.y == i.y} else {t.x == i.x} ) && condition {
+            let distance = if move_is_vertical {
+                if dir_x > 0 { i.x - t.x } else { t.x - i.x }
+            }
+            else {
+                if dir_y > 0 { i.y - t.y } else { t.y - i.y }
+            };
+            
+            if distance != 0 && distance > farthest_dist && i.value == mask{
+                farthest = *i;
+                farthest_dist = distance;
+            }
+            else if distance != 0 && i.value != mask && distance < nearest_block{
+                nearest_block = distance;
             }
         }
     }
@@ -311,7 +289,7 @@ pub fn is_move_possible(board: Board, dir: Direction) -> ( [[Option<Tile>; MAX_W
     for y in 0..board.height{
         for x in 0..board.width{
             match board.tiles[y][x] {
-                None => if crate::DEBUG_INFO {println!("Error (pt. 6)")},
+                None => if crate::DEBUG_INFO {println!("WARN: No tile at {},{}", x, y)},
                 Some(t2) => {
                     #[cfg(not(feature = "tile_id"))]
                     let t: Tile;
@@ -422,7 +400,7 @@ pub fn is_move_possible(board: Board, dir: Direction) -> ( [[Option<Tile>; MAX_W
     for y in 0..board.height{
         for x in 0..board.width{
             match universe[y][x] {
-                None => if crate::DEBUG_INFO {println!("Error (pt. 9)")},
+                None => if crate::DEBUG_INFO {println!("WARN: No tile at {}, {}", x, y)},
                 Some(t2) => {
                     #[cfg(not(feature = "tile_id"))]
                     let nt: Tile;
