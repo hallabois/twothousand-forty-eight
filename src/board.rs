@@ -15,7 +15,7 @@ pub const MAX_HEIGHT: usize = 5;
 /// Holds game board data
 #[derive(Debug, Copy, Clone)]
 #[cfg_attr(feature = "serde_derive", derive(Serialize, Deserialize))]
-pub struct Board{
+pub struct Board {
     /// The width of the board. Value of 0 is untested
     pub width: usize,
 
@@ -81,7 +81,7 @@ impl Board{
     }
 
     /// Get all tiles that exist ( aren't None )
-    pub fn get_all_tiles(&self) -> Vec<Tile>{
+    pub fn get_all_tiles(&self) -> Vec<Tile> {
         let mut out: Vec<Tile> = vec![];
         for y in 0..self.height{
             for x in 0..self.width{
@@ -111,7 +111,7 @@ impl Board{
 
     /// Gives a string representation of the board that is compatible with our anticheat systems
     #[cfg(feature = "serde_derive")]
-    pub fn oispahalla_serialize(&self, score: Option<usize>) -> String{
+    pub fn oispahalla_serialize(&self, score: Option<usize>) -> String {
         let score_str = match score {
             Some(s) => s.to_string(),
             None => String::from("SCOREHERE")
@@ -124,30 +124,19 @@ impl Board{
 }
 
 /// Initialize a new board with [Board::new]
-impl Default for Board{
-    fn default() -> Board{
+impl Default for Board {
+    fn default() -> Board {
         Board::new()
     }
 }
 
 /// Print a debug visualization of the board
-pub fn print_board(tiles: [[Option<tile::Tile>; MAX_WIDTH]; MAX_HEIGHT], width: usize, height: usize){
-    for y in 0..height{
-        for x in 0..width{
-            match tiles[y][x] {
-                Some(i) => {
-                    let string = i.value.to_string();
-                    print!("{}\t", if i.value == 0 {"."} else {string.as_str()} )
-                },
-                None => print!("?\t")
-            }
-        }
-        println!("");
-    }
+pub fn print_board(tiles: [[Option<tile::Tile>; MAX_WIDTH]; MAX_HEIGHT], width: usize, height: usize) {
+    println!("{}", board_to_string(tiles, width, height));
 }
 
 /// Return a debug visualization of the board
-pub fn board_to_string(tiles: [[Option<tile::Tile>; MAX_WIDTH]; MAX_HEIGHT], width: usize, height: usize) -> String{
+pub fn board_to_string(tiles: [[Option<tile::Tile>; MAX_WIDTH]; MAX_HEIGHT], width: usize, height: usize) -> String {
     let mut out = String::new();
     for y in 0..height{
         for x in 0..width{
@@ -181,12 +170,12 @@ pub fn create_tiles(width: usize, height: usize) -> [[Option<Tile>; MAX_WIDTH]; 
     return tiles;
 }
 
-/// Return the closest tile with the value of "mask" to the tile "t" in the given direction "dir", if "t" is returned, no such tile was found.
-pub fn get_closest_tile(t: Tile, viable_tiles: &Vec<Tile>, dir: Direction, mask: usize) -> Tile { //if t is returned, an error occured along the way
+/// Return the closest tile with the value of "mask" to the tile "t" in the given direction "dir", if None is returned, no such tile was found.
+pub fn get_closest_tile(t: Tile, viable_tiles: &Vec<Tile>, dir: Direction, mask: usize) -> Option<Tile> {
     let dir_x = dir.get_x();
     let dir_y = dir.get_y();
 
-    let mut closest = t;
+    let mut closest = None;
     let mut closest_dist: usize = usize::MAX;
     
     let mut nearest_block = usize::MAX;
@@ -211,34 +200,31 @@ pub fn get_closest_tile(t: Tile, viable_tiles: &Vec<Tile>, dir: Direction, mask:
 
             if distance != 0 && distance < closest_dist {
                 let recursed = get_closest_tile(*i, viable_tiles, dir, mask);
-                if recursed != *i && recursed.value == i.value && !recursed.merged{
+                if let Some(r) = recursed && r.value == i.value && !r.merged{
                     // Let this tile merge with the one in the direction of the move
-                    if !recursed.merged {
+                    if !r.merged {
                         nearest_block = distance;
                     }
                 }
                 else{
-                    closest = *i;
+                    closest = Some(*i);
                     closest_dist = distance;
                 }
-            }
-            else if distance != 0 && i.value != mask{
-                //return t;
             }
         }
     }
     if nearest_block < closest_dist{
-        return t;
+        return None;
     }
     return closest;
 }
 
-/// Return the farthest tile with the value of "mask" to the tile "t" in the given direction "dir", if "t" is returned, no such tile was found.
-pub fn get_farthest_tile(t: Tile, all_tiles: &Vec<Tile>, dir: Direction, mask: usize) -> Tile{ //if t is returned, an error occured along the way
+/// Return the farthest tile with the value of "mask" to the tile "t" in the given direction "dir", if None is returned, no such tile was found.
+pub fn get_farthest_tile(t: Tile, all_tiles: &Vec<Tile>, dir: Direction, mask: usize) -> Option<Tile> {
     let dir_x = dir.get_x();
     let dir_y = dir.get_y();
 
-    let mut farthest = t;
+    let mut farthest = None;
     let mut farthest_dist: usize = usize::MIN;
 
     let mut nearest_block = usize::MAX;
@@ -261,7 +247,7 @@ pub fn get_farthest_tile(t: Tile, all_tiles: &Vec<Tile>, dir: Direction, mask: u
             };
             
             if distance != 0 && distance > farthest_dist && i.value == mask{
-                farthest = *i;
+                farthest = Some(*i);
                 farthest_dist = distance;
             }
             else if distance != 0 && i.value != mask && distance < nearest_block{
@@ -270,7 +256,7 @@ pub fn get_farthest_tile(t: Tile, all_tiles: &Vec<Tile>, dir: Direction, mask: u
         }
     }
     if nearest_block < farthest_dist{
-        return t;
+        return None;
     }
     return farthest;
 }
@@ -324,8 +310,8 @@ pub fn is_move_possible(board: Board, dir: Direction) -> ( [[Option<Tile>; MAX_W
                 // Do nothing
             }
             else{
-                let closest = get_closest_tile(*t, &occupied_tiles, dir, t.value);
-                if t != &closest && t.value == closest.value && !merged_tiles.contains( &(closest.x, closest.y) ) && !closest.merged {
+                let closest_opt = get_closest_tile(*t, &occupied_tiles, dir, t.value);
+                if let Some(closest) = closest_opt && t.value == closest.value && !merged_tiles.contains( &(closest.x, closest.y) ) && !closest.merged {
                     
                     universe[t.y][t.x] = Some( Tile::new(t.x, t.y, 0, false) );
 
@@ -366,9 +352,9 @@ pub fn is_move_possible(board: Board, dir: Direction) -> ( [[Option<Tile>; MAX_W
             }
             else{
                 let dir_to_use = dir;
-                let farthest_free = get_farthest_tile(*t, &all_tiles, dir_to_use , 0);
+                let farthest_free_opt = get_farthest_tile(*t, &all_tiles, dir_to_use , 0);
 
-                if farthest_free != *t {
+                if let Some(farthest_free) = farthest_free_opt {
                     #[cfg(not(feature = "tile_id"))]
                     let new_tile: Tile;
                     #[cfg(feature = "tile_id")]
