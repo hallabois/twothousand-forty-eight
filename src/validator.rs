@@ -1,5 +1,8 @@
 //! Provides functions to validate a [Recording](crate::recording::Recording)
 
+use serde::Deserialize;
+use serde::Serialize;
+
 use crate::direction;
 use crate::recording::Recording;
 use crate::direction::Direction;
@@ -10,10 +13,33 @@ use crate::board::print_board;
 /// the validator will stop validating history beyond [MAX_HISTORY_LENGTH]
 const MAX_HISTORY_LENGTH: usize = usize::MAX;
 
+
+#[derive(Debug, Clone, Copy)]
+#[cfg(feature = "wasm")]
+#[derive(Serialize, Deserialize)]
+pub struct ValidationData {
+    pub valid: bool,
+    /// The maximum score reached during the run, 0 if the run is not valid
+    pub score: usize,
+    /// The score at the end of the run, may not match score if a break was used near the end of the run
+    pub score_end: usize,
+    /// Error margin on the score, if the last move was not recorded
+    pub score_margin: usize,
+    /// Amount of breaks used
+    pub breaks: usize,
+}
+
+impl ValidationData {
+    pub fn new_invalid() -> ValidationData {
+        ValidationData { valid: false, score: 0, score_end: 0, score_margin: 0, breaks: 0 }
+    }
+}
+
 /// Validates the history continuity and returns the determined validity, score, possible score margin (caused when the last game move was not recorded) and break count.
-pub fn validate_history(history: Recording) -> (bool, usize, usize, usize) { // Valid, score, possible score margin, breaks
+pub fn validate_history(history: Recording) -> ValidationData {
     let mut score: usize = 0;
     let mut score_margin: usize = 0;
+    let mut max_score: usize = 0;
 
     let history_len = history.history.len();
     let mut breaks: usize = 0;
@@ -27,6 +53,7 @@ pub fn validate_history(history: Recording) -> (bool, usize, usize, usize) { // 
         let predicted = is_move_possible(Board { tiles: board, width: history.width, height: history.height }, dir);
         let mut predicted_board = predicted.0;
         score += predicted.2;
+        max_score = usize::max(score, max_score);
 
         if ind < (history_len - 1) && ind < MAX_HISTORY_LENGTH {
             let board_next = history.history[ind + 1].0;
@@ -35,7 +62,7 @@ pub fn validate_history(history: Recording) -> (bool, usize, usize, usize) { // 
                     if crate::DEBUG_INFO {println!("[Add] Change {:?} => {:?}", predicted_board[add.y][add.x], add)};
                     if add.value > 4 {
                         println!("Invalid addition value at {:?}!", add);
-                        return (false, 0, 0, breaks);
+                        return ValidationData::new_invalid();
                     };
                     predicted_board[add.y][add.x] = Some( add );
                 },
@@ -64,7 +91,7 @@ pub fn validate_history(history: Recording) -> (bool, usize, usize, usize) { // 
                 print_board(predicted_board, history.width, history.height);
                 println!("Got instead: (score {}) ", board_actual.get_total_value());
                 print_board(board_next, history.width, history.height);
-                return (false, 0, 0, breaks);
+                return ValidationData::new_invalid();
             }
         }
     }
@@ -81,7 +108,13 @@ pub fn validate_history(history: Recording) -> (bool, usize, usize, usize) { // 
         }
     }
 
-    return (true, score, score_margin, breaks);
+    return ValidationData {
+        valid: true,
+        score: max_score,
+        score_end: score,
+        score_margin,
+        breaks
+    };
 }
 
 /// Makes sure that the starting state of the history doesn't contain too many tiles or tiles with a too big value.

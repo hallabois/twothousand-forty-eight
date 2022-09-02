@@ -78,10 +78,10 @@ mod validator {
         let history = parser::parse_data(String::from(GAME4X4B)).unwrap();
         let first_move_valid = validator::validate_first_move(&history);
         assert_eq!(first_move_valid, true);
-        let (result1, score, score_margin, breaks) = validator::validate_history(history);
-        assert_eq!(result1, true);
-        assert_score(score, 2788, score_margin);
-        assert_eq!(breaks, 0);
+        let result = validator::validate_history(history);
+        assert_eq!(result.valid, true);
+        assert_score(result.score, 2788, result.score_margin);
+        assert_eq!(result.breaks, 0);
     }
     #[test]
     fn works_normal_4x4_0breaks_b() {
@@ -89,10 +89,10 @@ mod validator {
         let history = parser::parse_data(String::from(GAME4X4C)).unwrap();
         let first_move_valid = validator::validate_first_move(&history);
         assert_eq!(first_move_valid, true);
-        let (result1, score, score_margin, breaks) = validator::validate_history(history);
-        assert_eq!(result1, true);
-        assert_score(score, 2624, score_margin);
-        assert_eq!(breaks, 0);
+        let result = validator::validate_history(history);
+        assert_eq!(result.valid, true);
+        assert_score(result.score, 2624, result.score_margin);
+        assert_eq!(result.breaks, 0);
     }
     #[test]
     fn works_normal_4x4_2breaks() {
@@ -100,10 +100,10 @@ mod validator {
         let history = parser::parse_data(String::from(GAME4X4)).unwrap();
         let first_move_valid = validator::validate_first_move(&history);
         assert_eq!(first_move_valid, true);
-        let (result1, score, score_margin, breaks) = validator::validate_history(history);
-        assert_eq!(result1, true);
-        assert_score(score, 6048, score_margin);
-        assert_eq!(breaks, 2);
+        let result = validator::validate_history(history);
+        assert_eq!(result.valid, true);
+        assert_score(result.score, 6048, result.score_margin);
+        assert_eq!(result.breaks, 2);
     }
     #[test]
     fn works_normal_3x3_0breaks_a() {
@@ -111,10 +111,10 @@ mod validator {
         let history = parser::parse_data(String::from(GAME3X3)).unwrap();
         let first_move_valid = validator::validate_first_move(&history);
         assert_eq!(first_move_valid, true);
-        let (result1, score, score_margin, breaks) = validator::validate_history(history);
-        assert_eq!(result1, true);
-        assert_score(score, 14220, score_margin);
-        assert_eq!(breaks, 0);
+        let result = validator::validate_history(history);
+        assert_eq!(result.valid, true);
+        assert_score(result.score, 14220, result.score_margin);
+        assert_eq!(result.breaks, 0);
     }
     #[test]
     fn works_normal_3x3_0breaks_b() {
@@ -122,10 +122,10 @@ mod validator {
         let history = parser::parse_data(String::from(GAME3X3B)).unwrap();
         let first_move_valid = validator::validate_first_move(&history);
         assert_eq!(first_move_valid, true);
-        let (result1, score, score_margin, breaks) = validator::validate_history(history);
-        assert_eq!(result1, true);
-        assert_score(score, 208, score_margin);
-        assert_eq!(breaks, 0);
+        let result = validator::validate_history(history);
+        assert_eq!(result.valid, true);
+        assert_score(result.score, 208, result.score_margin);
+        assert_eq!(result.breaks, 0);
     }
     #[test]
     fn works_looong_4x4_0breaks() {
@@ -133,10 +133,10 @@ mod validator {
         let history = parser::parse_data(String::from(GAMEOBSCENE)).unwrap();
         let first_move_valid = validator::validate_first_move(&history);
         assert_eq!(first_move_valid, true);
-        let (result1, score, score_margin, breaks) = validator::validate_history(history);
-        assert_eq!(result1, true);
-        assert_score(score, 200028, score_margin);
-        assert_eq!(breaks, 0);
+        let result = validator::validate_history(history);
+        assert_eq!(result.valid, true);
+        assert_score(result.score, 200028, result.score_margin);
+        assert_eq!(result.breaks, 0);
     }
 }
 
