@@ -1,8 +1,4 @@
 //! Provides functions to validate a [Recording](crate::recording::Recording)
-
-use serde::Deserialize;
-use serde::Serialize;
-
 use crate::direction;
 use crate::recording::Recording;
 use crate::direction::Direction;
@@ -10,13 +6,17 @@ use crate::board::Board;
 use crate::board::is_move_possible;
 use crate::board::print_board;
 
+#[cfg(feature = "wasm")]
+use serde::Deserialize;
+#[cfg(feature = "wasm")]
+use serde::Serialize;
+
 /// the validator will stop validating history beyond [MAX_HISTORY_LENGTH]
 const MAX_HISTORY_LENGTH: usize = usize::MAX;
 
 
 #[derive(Debug, Clone, Copy)]
-#[cfg(feature = "wasm")]
-#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "wasm", derive(Serialize, Deserialize))]
 pub struct ValidationData {
     pub valid: bool,
     /// The maximum score reached during the run, 0 if the run is not valid
