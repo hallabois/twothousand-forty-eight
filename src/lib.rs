@@ -47,6 +47,29 @@ pub fn validate(data: &str) -> String {
 
 #[cfg(feature = "wasm")]
 #[wasm_bindgen]
+pub fn validate_all_frames(data: &str) -> String {
+    let frames_src = data.split(":").collect::<Vec<&str>>();
+    let frame_count = frames_src.clone().len();
+    println!("found {} frames", frame_count);
+    let mut validation_results: Vec<Option<validator::ValidationData>> = vec![];
+
+    for frame in 0..frame_count {
+        let section = frames_src[0..frame].join(":");
+        match parser::parse_data(section) {
+            Some(parsed) => {
+                let history_valid = validator::validate_history(parsed);
+                validation_results.push(Some(history_valid));
+            },
+            None => {
+                validation_results.push(None);
+            }
+        }
+    }
+    return serde_json::to_string(&validation_results).unwrap();
+}
+
+#[cfg(feature = "wasm")]
+#[wasm_bindgen]
 pub fn apply_move(board_data: &str, dir: usize, add_random: bool) -> String {
     let b = serde_json::from_str(board_data).unwrap();
     // let first_move_valid = validator::validate_first_move(&parsed);

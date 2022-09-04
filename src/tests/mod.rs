@@ -225,3 +225,30 @@ mod tile_merged_from {
         assert!(nt.merged_from.is_none());
     }
 }
+
+#[cfg(test)]
+#[cfg(feature = "wasm")]
+mod wasm {
+    use crate::validator;
+    use super::lib_testgames;
+
+    #[test]
+    fn validate_all_frames() {
+        let validation_result = crate::validate_all_frames(lib_testgames::GAME3X3);
+        let parsed: Vec<Option<validator::ValidationData>> = serde_json::from_str(&validation_result).unwrap();
+        println!("parsed: {:?}", parsed);
+        println!("parsed length: {}", parsed.len());
+
+        let first = parsed.get(0).unwrap();
+        println!("first: {:?}", first);
+        assert!(first.is_none());
+        let last = parsed.last().unwrap();
+        println!("last: {:?}", last);
+        let unwrapped = last.unwrap();
+        assert!(unwrapped.valid);
+        assert_eq!(unwrapped.score, 14212);
+        assert_eq!(unwrapped.breaks, 0);
+        assert_eq!(unwrapped.score_end, 14212);
+        assert_eq!(unwrapped.score_margin, 64);
+    }
+}

@@ -15,7 +15,7 @@ use serde::Serialize;
 const MAX_HISTORY_LENGTH: usize = usize::MAX;
 
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "wasm", derive(Serialize, Deserialize))]
 pub struct ValidationData {
     pub valid: bool,
