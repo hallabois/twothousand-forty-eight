@@ -1,6 +1,6 @@
 [package]
 name = "twothousand-forty-eight"
-version = "0.7.1"
+version = "0.7.2"
 edition = "2021"
 authors = ["xypine <elias.eskelinen@pm.me>"]
 license = "MIT"

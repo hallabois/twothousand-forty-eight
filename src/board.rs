@@ -13,7 +13,7 @@ pub const MAX_WIDTH: usize = 5;
 pub const MAX_HEIGHT: usize = 5;
 
 /// Holds game board data
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde_derive", derive(Serialize, Deserialize))]
 pub struct Board {
     /// The width of the board. Value of 0 is untested
