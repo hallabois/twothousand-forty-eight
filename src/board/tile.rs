@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 /// Tile is a basic representation of the tiles on the game board.
 /// 
 /// If the feature "tile_id" is enabled, all the tiles are assigned a unique id, which is preserved in the history (excluding merges)
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq)]
 #[cfg_attr(feature = "serde_derive", derive(Serialize, Deserialize))]
 #[cfg_attr(not(feature = "tile_id"), derive(PartialEq))]
 pub struct Tile{
