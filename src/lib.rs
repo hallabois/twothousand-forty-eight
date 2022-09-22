@@ -12,6 +12,10 @@ pub mod recording;
 
 pub const DEBUG_INFO: bool = false;
 
+#[cfg(feature = "use_wee_alloc")]
+#[global_allocator]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+
 #[cfg(feature = "add_random")]
 use board::tile;
 
