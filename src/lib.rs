@@ -1,5 +1,3 @@
-#![feature(doc_auto_cfg)]
-#![feature(let_chains)]
 //! a basic engine and move validator for the game 2048
 //!
 //! Includes wasm functions generated with wasm_bindgen
