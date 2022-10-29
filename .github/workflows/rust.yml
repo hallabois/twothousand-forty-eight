@@ -28,6 +28,6 @@ jobs:
     - name: Run tests
       run: cargo test --verbose
     - name: Run tests with extra features
-      run: cargo test --verbose --features wasm
+      run: cargo test --verbose --features all
     - name: Run tests with no features
       run: cargo test --verbose --no-default-features

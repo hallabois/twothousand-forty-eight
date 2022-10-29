@@ -2,17 +2,16 @@ mod lib_testgames;
 
 #[cfg(test)]
 mod board {
+    use crate::board;
+    use board::Board;
     #[test]
-    fn creation_works(){
-        use crate::board;
-        use board::Board;
-
+    fn creation_works() {
         for w in 0..board::MAX_WIDTH {
             for h in 0..board::MAX_HEIGHT {
-                let mut board = Board{
+                let mut board = Board {
                     width: w,
                     height: h,
-                    tiles: board::create_tiles(w, h)
+                    tiles: board::create_tiles(w, h),
                 };
 
                 let mut index = 0;
@@ -44,7 +43,7 @@ mod parser {
     use crate::parser;
 
     #[test]
-    fn works_4x4(){
+    fn works_4x4() {
         use lib_testgames::GAME4X4;
         let history4x4 = parser::parse_data(String::from(GAME4X4)).unwrap();
         assert_eq!(history4x4.width, 4);
@@ -53,7 +52,7 @@ mod parser {
     }
 
     #[test]
-    fn works_3x3(){
+    fn works_3x3() {
         use lib_testgames::GAME3X3;
         let history4x4 = parser::parse_data(String::from(GAME3X3)).unwrap();
         assert_eq!(history4x4.width, 3);
@@ -69,7 +68,12 @@ mod validator {
     use crate::validator;
 
     pub fn assert_score(score: usize, expected: usize, score_margin: usize) {
-        assert!(score <= expected+score_margin, "{} !< {}", score, expected+score_margin);
+        assert!(
+            score <= expected + score_margin,
+            "{} !< {}",
+            score,
+            expected + score_margin
+        );
     }
 
     #[test]
@@ -78,8 +82,7 @@ mod validator {
         let history = parser::parse_data(String::from(GAME4X4B)).unwrap();
         let first_move_valid = validator::validate_first_move(&history);
         assert_eq!(first_move_valid, true);
-        let result = validator::validate_history(history);
-        assert_eq!(result.valid, true);
+        let result = validator::validate_history(history).unwrap();
         assert_score(result.score, 2788, result.score_margin);
         assert_eq!(result.breaks, 0);
     }
@@ -89,8 +92,7 @@ mod validator {
         let history = parser::parse_data(String::from(GAME4X4C)).unwrap();
         let first_move_valid = validator::validate_first_move(&history);
         assert_eq!(first_move_valid, true);
-        let result = validator::validate_history(history);
-        assert_eq!(result.valid, true);
+        let result = validator::validate_history(history).unwrap();
         assert_score(result.score, 2624, result.score_margin);
         assert_eq!(result.breaks, 0);
     }
@@ -100,8 +102,7 @@ mod validator {
         let history = parser::parse_data(String::from(GAME4X4)).unwrap();
         let first_move_valid = validator::validate_first_move(&history);
         assert_eq!(first_move_valid, true);
-        let result = validator::validate_history(history);
-        assert_eq!(result.valid, true);
+        let result = validator::validate_history(history).unwrap();
         assert_score(result.score, 6048, result.score_margin);
         assert_eq!(result.breaks, 2);
     }
@@ -111,8 +112,7 @@ mod validator {
         let history = parser::parse_data(String::from(GAME3X3)).unwrap();
         let first_move_valid = validator::validate_first_move(&history);
         assert_eq!(first_move_valid, true);
-        let result = validator::validate_history(history);
-        assert_eq!(result.valid, true);
+        let result = validator::validate_history(history).unwrap();
         assert_score(result.score, 14220, result.score_margin);
         assert_eq!(result.breaks, 0);
     }
@@ -122,8 +122,7 @@ mod validator {
         let history = parser::parse_data(String::from(GAME3X3B)).unwrap();
         let first_move_valid = validator::validate_first_move(&history);
         assert_eq!(first_move_valid, true);
-        let result = validator::validate_history(history);
-        assert_eq!(result.valid, true);
+        let result = validator::validate_history(history).unwrap();
         assert_score(result.score, 208, result.score_margin);
         assert_eq!(result.breaks, 0);
     }
@@ -133,8 +132,7 @@ mod validator {
         let history = parser::parse_data(String::from(GAMEOBSCENE)).unwrap();
         let first_move_valid = validator::validate_first_move(&history);
         assert_eq!(first_move_valid, true);
-        let result = validator::validate_history(history);
-        assert_eq!(result.valid, true);
+        let result = validator::validate_history(history).unwrap();
         assert_score(result.score, 200028, result.score_margin);
         assert_eq!(result.breaks, 0);
     }
@@ -158,7 +156,10 @@ mod serializers {
     fn tile_serializer_some() {
         let t = Tile::new(0, 1, 4, false);
 
-        let re = Regex::new("\\{\"x\":0,\"y\":1,\"value\":4,\"merged\":false,\"id\":[0-9]+,\"merged_from\":null\\}").unwrap();
+        let re = Regex::new(
+            "\\{\"x\":0,\"y\":1,\"value\":4,\"merged\":false,\"id\":[0-9]+,\"merged_from\":null\\}",
+        )
+        .unwrap();
 
         println!("Matching against: {}", t.to_json());
 
@@ -176,7 +177,10 @@ mod history_hash {
     fn history_hash_works() {
         use lib_testgames::GAME4X4;
         let history = parser::parse_data(String::from(GAME4X4)).unwrap();
-        assert_eq!(history.hash_v1(), String::from("9CAC2643E4E5F66E18FD9150320471F016CAF69FA3865A6DAE1DD9726F6792F5"));
+        assert_eq!(
+            history.hash_v1(),
+            String::from("9CAC2643E4E5F66E18FD9150320471F016CAF69FA3865A6DAE1DD9726F6792F5")
+        );
     }
 }
 
@@ -197,7 +201,8 @@ mod tile_merged_from {
         println!("Starting board:");
         board::print_board(game.tiles, 4, 4);
 
-        let (new_tiles, possible, _scoregain) = board::is_move_possible(game, crate::direction::Direction::LEFT);
+        let (new_tiles, possible, _scoregain) =
+            board::is_move_possible(game, crate::direction::Direction::LEFT);
         assert!(possible);
 
         println!("Board on next move:");
@@ -211,7 +216,8 @@ mod tile_merged_from {
         assert!(nt.merged_from == Some([t1.id, t2.id]) || nt.merged_from == Some([t2.id, t1.id]));
 
         game.tiles = new_tiles;
-        let (new_tiles, possible, _scoregain) = board::is_move_possible(game, crate::direction::Direction::RIGHT);
+        let (new_tiles, possible, _scoregain) =
+            board::is_move_possible(game, crate::direction::Direction::RIGHT);
         assert!(possible);
 
         println!("Board on next move:");
@@ -229,23 +235,25 @@ mod tile_merged_from {
 #[cfg(test)]
 #[cfg(feature = "wasm")]
 mod wasm {
-    use crate::validator;
     use super::lib_testgames;
+    use crate::validator;
 
+    // This test is quite slow (a lot of json parsing)
     #[test]
     fn validate_all_frames() {
         let validation_result = crate::validate_all_frames(lib_testgames::GAME3X3);
-        let parsed: Vec<Option<validator::ValidationData>> = serde_json::from_str(&validation_result).unwrap();
+        let parsed: Vec<Option<Result<validator::ValidationData, validator::ValidationError>>> =
+            serde_json::from_str(&validation_result).unwrap();
         println!("parsed: {:?}", parsed);
         println!("parsed length: {}", parsed.len());
 
         let first = parsed.get(0).unwrap();
         println!("first: {:?}", first);
         assert!(first.is_none());
-        let last = parsed.last().unwrap();
+        let last = parsed.last().unwrap().clone();
         println!("last: {:?}", last);
         let unwrapped = last.unwrap();
-        assert!(unwrapped.valid);
+        let unwrapped = unwrapped.unwrap();
         assert_eq!(unwrapped.score, 14212);
         assert_eq!(unwrapped.breaks, 0);
         assert_eq!(unwrapped.score_end, 14212);

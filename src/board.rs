@@ -46,7 +46,7 @@ impl Board{
         }
     }
 
-    /// Get the tiles that exist and which's values are nonzero
+    /// Get the tiles that exist and which's values are non-zero
     pub fn get_occupied_tiles(&self) -> Vec<Tile> {
         let mut out: Vec<Tile> = vec![];
         for y in 0..self.height{

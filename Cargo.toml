@@ -1,6 +1,6 @@
 [package]
 name = "twothousand-forty-eight"
-version = "0.10.0"
+version = "0.12.0"
 edition = "2021"
 authors = ["xypine <elias.eskelinen@pm.me>"]
 license = "MIT"
@@ -21,6 +21,7 @@ serde = {version = "1.0.130", optional = true, features = ["derive"]}
 serde_json = {version = "1.0.72", optional = true}
 getrandom = { version = "0.2", features = ["js"], optional = true }
 rand = {version = "0.8.4", optional = true}
+thiserror = "1.0.37"
 
 [dev-dependencies]
 regex = "1.5"
@@ -39,13 +40,15 @@ name = "board"
 harness = false
 
 [features]
-default = ["history_hash", "tile_id", "tile_merged_from", "add_random"]
+default = ["all"] #["history_hash", "tile_id", "tile_merged_from", "add_random"]
+all = ["history_hash", "serde_derive", "wasm", "add_random", "tile_id", "tile_merged_from"]
+
 history_hash = ["sha2"]
 serde_derive = ["serde", "serde_json"]
 wasm = ["serde_derive", "wasm-bindgen", "getrandom", "rand"]
 add_random = ["getrandom", "rand"]
 tile_id = []
-tile_merged_from = [ "tile_id" ]
+tile_merged_from = ["tile_id"]
 
 [profile.release]
 strip = true  # Automatically strip symbols from the binary.
