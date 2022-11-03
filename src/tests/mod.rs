@@ -64,6 +64,8 @@ mod parser {
 #[cfg(test)]
 mod validator {
     use super::lib_testgames;
+    use crate::board::print_board;
+    use crate::board::Board;
     use crate::parser;
     use crate::validator;
 
@@ -74,6 +76,43 @@ mod validator {
             score,
             expected + score_margin
         );
+    }
+
+    #[test]
+    fn history_reconstruction() {
+        use lib_testgames::GAME3X3;
+        let recording = parser::parse_data(String::from(GAME3X3)).unwrap();
+        let history = recording.history.clone();
+        let reconstruction = validator::reconstruct_history(recording.clone()).unwrap();
+
+        assert_eq!(history.len(), reconstruction.history.len());
+
+        for i in 1..(history.len() - 1) {
+            println!("history index {}", i);
+            let history_tiles = history[i].0;
+            let history_board = Board {
+                width: recording.width,
+                height: recording.height,
+                tiles: history_tiles,
+            };
+            println!("recorded board");
+            print_board(history_tiles, recording.width, recording.height);
+            let rec_board = reconstruction.history[i];
+            println!("predicted board");
+            print_board(rec_board.tiles, rec_board.width, rec_board.height);
+
+            let t1 = history_board.get_all_tiles();
+            let t2 = rec_board.get_all_tiles();
+            assert_eq!(t1.len(), t2.len());
+            for ti in 0..(t1.len() - 1) {
+                println!("tile index {}", ti);
+                let ta = t1[ti];
+                let tb = t2[ti];
+                assert_eq!(ta.x, tb.x);
+                assert_eq!(ta.y, tb.y);
+                assert_eq!(ta.value, tb.value);
+            }
+        }
     }
 
     #[test]

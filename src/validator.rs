@@ -43,11 +43,32 @@ pub struct ValidationData {
 
 /// Validates the history continuity and returns the determined validity, score, possible score margin (caused when the last game move was not recorded) and break count.
 pub fn validate_history(history: Recording) -> Result<ValidationData, ValidationError> {
+    let reconstruction = reconstruct_history(history)?;
+    Ok(reconstruction.validation_data)
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "wasm", derive(Serialize, Deserialize))]
+pub struct HistoryReconstruction {
+    pub validation_data: ValidationData,
+    pub history: Vec<Board>,
+}
+pub fn reconstruct_history(history: Recording) -> Result<HistoryReconstruction, ValidationError> {
     let mut score: usize = 0;
     let mut score_margin: usize = 0;
     let mut max_score: usize = 0;
 
     let history_len = history.history.len();
+    let mut history_out: Vec<Board> = vec![];
+    if history_len > 0 {
+        // Push the starting position into history, as it is not validated here.
+        history_out.push(Board {
+            height: history.height,
+            width: history.width,
+            tiles: history.history[0].0,
+        });
+    }
+
     let mut breaks: usize = 0;
     for ind in 0..history_len {
         let i = history.history[ind];
@@ -125,6 +146,7 @@ pub fn validate_history(history: Recording) -> Result<ValidationData, Validation
                     actual_score,
                 ));
             }
+            history_out.push(board_predicted);
         }
     }
     // Get the score margin
@@ -147,12 +169,15 @@ pub fn validate_history(history: Recording) -> Result<ValidationData, Validation
         }
     }
 
-    return Ok(ValidationData {
-        valid: true,
-        score: max_score,
-        score_end: score,
-        score_margin,
-        breaks,
+    return Ok(HistoryReconstruction {
+        validation_data: ValidationData {
+            valid: true,
+            score: max_score,
+            score_end: score,
+            score_margin,
+            breaks,
+        },
+        history: history_out,
     });
 }
 

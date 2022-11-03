@@ -26,38 +26,10 @@ pub fn parse(data: &str) -> String {
 #[cfg(feature = "wasm")]
 #[wasm_bindgen]
 pub fn get_frames(data: &str) -> String {
-    use board::is_move_possible;
-
     let parsed = parser::parse_data(String::from(data)).unwrap();
-    let mut out: Vec<board::Board> = vec![];
-    let mut prev_opt: Option<board::Board> = None;
-    for i in 0..parsed.history.len() {
-        let x = parsed.history[i];
-        let mut board = board::Board {
-            width: parsed.width,
-            height: parsed.height,
-            tiles: x.0,
-        };
-        if let Some(prev) = prev_opt {
-            let mut prev_board = board::Board {
-                width: parsed.width,
-                height: parsed.height,
-                tiles: prev.tiles,
-            };
-            let (tiles, _possible, _score_gain) = is_move_possible(prev_board, x.1);
+    let reconstruction = validator::reconstruct_history(parsed).unwrap();
 
-            prev_board.tiles = tiles;
-            if let Some(add) = x.2 {
-                prev_board.tiles[add.y][add.x] = Some(add);
-            }
-
-            board.tiles = tiles;
-        }
-
-        out.push(board);
-        prev_opt = Some(board);
-    }
-    return serde_json::to_string(&out).unwrap();
+    return serde_json::to_string(&reconstruction.history).unwrap();
 }
 
 #[cfg(feature = "wasm")]
