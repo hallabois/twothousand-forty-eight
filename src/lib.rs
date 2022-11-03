@@ -36,9 +36,9 @@ pub fn get_frames(data: &str) -> String {
                 height: parsed.height,
                 tiles: x.0,
             };
-            board.oispahalla_serialize(None)
+            board
         })
-        .collect::<Vec<String>>();
+        .collect::<Vec<board::Board>>();
     return serde_json::to_string(&out).unwrap();
 }
 
