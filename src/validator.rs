@@ -70,6 +70,7 @@ pub fn reconstruct_history(history: Recording) -> Result<HistoryReconstruction, 
     }
 
     let mut breaks: usize = 0;
+    let mut last_was_break = false;
     for ind in 0..history_len {
         let i = history.history[ind];
 
@@ -79,7 +80,11 @@ pub fn reconstruct_history(history: Recording) -> Result<HistoryReconstruction, 
 
         let predicted = is_move_possible(
             Board {
-                tiles: board,
+                tiles: if ind > 0 && !last_was_break {
+                    history_out[ind].tiles
+                } else {
+                    board
+                },
                 width: history.width,
                 height: history.height,
             },
@@ -124,12 +129,15 @@ pub fn reconstruct_history(history: Recording) -> Result<HistoryReconstruction, 
             };
             let expected_score = board_predicted.get_total_value();
             let actual_score = board_actual.get_total_value();
+
+            last_was_break = false;
             if dir == Direction::END && expected_score == actual_score {
             } else if predicted_board == board_next { // (predicted.1) &&
             } else if breaks < 3 && (expected_score > actual_score) && score > 999 {
                 //Kurinpalautus / Parinkulautus
                 breaks += 1;
                 score -= 1000;
+                last_was_break = true;
             } else {
                 println!(
                     "Went wrong at index {}: \n{:?}\n{:?}",
