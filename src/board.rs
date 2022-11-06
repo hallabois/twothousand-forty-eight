@@ -8,9 +8,10 @@ use tile::Tile;
 
 /// Max width of a board the program can handle. Be careful when increasing, as this increases memory use expotentially.
 pub const MAX_WIDTH: usize = 5;
-
 /// Max height of a board the program can handle. Be careful when increasing, as this increases memory use expotentially.
 pub const MAX_HEIGHT: usize = 5;
+
+pub type Tiles = [[Option<Tile>; MAX_WIDTH]; MAX_HEIGHT];
 
 /// Holds game board data
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -23,7 +24,7 @@ pub struct Board {
     pub height: usize,
 
     /// The tiles of the board, note that the size of the array is allocated based on the max size.
-    pub tiles: [[Option<Tile>; MAX_WIDTH]; MAX_HEIGHT],
+    pub tiles: Tiles,
 }
 
 impl Board {
@@ -38,12 +39,8 @@ impl Board {
 
     /// Set a tile on the board and silently fail if the target tile doesn't exist and [DEBUG_INFO](crate::DEBUG_INFO) is disabled.
     pub fn set_tile(&mut self, x: usize, y: usize, val: usize) {
-        if let Some(i) = self.tiles[y][x] {
-            self.tiles[y][x] = Some(Tile::new(x, y, val, i.merged));
-        } else {
-            if crate::DEBUG_INFO {
-                println!("Error!")
-            };
+        if let Some(_) = self.tiles[y][x] {
+            self.tiles[y][x] = Some(Tile::new(x, y, val, None));
         }
     }
 
@@ -52,17 +49,9 @@ impl Board {
         let mut out: Vec<Tile> = vec![];
         for y in 0..self.height {
             for x in 0..self.width {
-                let t = self.tiles[y][x];
-                match t {
-                    Some(tile) => {
-                        if tile.value != 0 {
-                            out.push(tile)
-                        }
-                    }
-                    None => {
-                        if crate::DEBUG_INFO {
-                            println!("WARN: None tile at {}, {}", x, y)
-                        }
+                if let Some(tile) = self.tiles[y][x] {
+                    if tile.value != 0 {
+                        out.push(tile)
                     }
                 }
             }
@@ -75,17 +64,9 @@ impl Board {
         let mut out: Vec<Tile> = vec![];
         for y in 0..self.height {
             for x in 0..self.width {
-                let t = self.tiles[y][x];
-                match t {
-                    Some(tile) => {
-                        if tile.value == 0 {
-                            out.push(tile)
-                        }
-                    }
-                    None => {
-                        if crate::DEBUG_INFO {
-                            println!("WARN: None tile at {}, {}", x, y)
-                        }
+                if let Some(tile) = self.tiles[y][x] {
+                    if tile.value == 0 {
+                        out.push(tile)
                     }
                 }
             }
@@ -98,14 +79,8 @@ impl Board {
         let mut out: Vec<Tile> = vec![];
         for y in 0..self.height {
             for x in 0..self.width {
-                let t = self.tiles[y][x];
-                match t {
-                    Some(tile) => out.push(tile),
-                    None => {
-                        if crate::DEBUG_INFO {
-                            println!("WARN: None tile at {}, {}", x, y)
-                        }
-                    }
+                if let Some(tile) = self.tiles[y][x] {
+                    out.push(tile);
                 }
             }
         }
@@ -131,7 +106,7 @@ impl Board {
     pub fn oispahalla_serialize(&self, score: Option<usize>) -> String {
         let score_str = match score {
             Some(s) => s.to_string(),
-            None => String::from("SCOREHERE"),
+            None => String::from("-3735928559"),
         };
         let arr = self
             .tiles
@@ -195,21 +170,25 @@ pub fn board_to_string(
                 }
             }
         }
-        println!("");
         out += "\n";
     }
     out
 }
 
 /// Initialize an array of empty tiles created with [Tile::new]
-pub fn create_tiles(width: usize, height: usize) -> [[Option<Tile>; MAX_WIDTH]; MAX_HEIGHT] {
+pub fn create_tiles(width: usize, height: usize) -> Tiles {
     if width > MAX_WIDTH || height > MAX_HEIGHT {
         panic!("Board size too big! This version of the program has been compiled to support the maximum size of {:?}", (MAX_WIDTH, MAX_HEIGHT));
     }
-    let mut tiles: [[Option<Tile>; MAX_WIDTH]; MAX_HEIGHT] = [[None; MAX_WIDTH]; MAX_HEIGHT];
+    let mut tiles: Tiles = [[None; MAX_WIDTH]; MAX_HEIGHT];
     for x in 0..width {
         for y in 0..height {
-            tiles[y][x] = Some(Tile::new(x, y, 0, false));
+            tiles[y][x] = Some(Tile {
+                x,
+                y,
+                value: 0,
+                ..Default::default()
+            });
         }
     }
     return tiles;
@@ -270,11 +249,9 @@ pub fn get_closest_tile(
             if distance != 0 && distance < closest_dist {
                 let recursed = get_closest_tile(*i, viable_tiles, dir, mask);
                 if let Some(r) = recursed {
-                    if r.value == i.value && !r.merged {
+                    if r.value == i.value && r.merged_from.is_none() {
                         // Let this tile merge with the one in the direction of the move
-                        if !r.merged {
-                            nearest_block = distance;
-                        }
+                        nearest_block = distance;
                     } else {
                         closest = Some(*i);
                         closest_dist = distance;
@@ -357,177 +334,116 @@ pub fn get_farthest_tile(
     return farthest;
 }
 
-/// Check if a move is possible in the direction "dir" and return the next board, the possibility, and the score gain
-pub fn is_move_possible(
-    board: Board,
-    dir: Direction,
-) -> ([[Option<Tile>; MAX_WIDTH]; MAX_HEIGHT], bool, usize) {
+const MAX_MOVE_CHECKS: usize = 256;
+#[cfg_attr(feature = "serde_derive", derive(Serialize, Deserialize))]
+pub struct MoveResult {
+    pub possible: bool,
+    pub tiles: Tiles,
+    pub score_gain: usize,
+}
+/// Check if a move is possible in the direction "dir"
+pub fn check_move(board: Board, dir: Direction) -> MoveResult {
     if dir == Direction::END {
-        return (board.tiles, true, 0);
+        return MoveResult {
+            possible: true,
+            tiles: board.tiles,
+            score_gain: 0,
+        };
     }
 
     let mut was_changed = false;
 
-    // clone the current board
-    let mut universe = create_tiles(board.width, board.height);
-    for y in 0..board.height {
-        for x in 0..board.width {
-            match board.tiles[y][x] {
-                None => {
-                    if crate::DEBUG_INFO {
-                        println!("WARN: No tile at {},{}", x, y)
-                    }
-                }
-                Some(t2) => {
-                    #[cfg(not(feature = "tile_id"))]
-                    let t: Tile;
-                    #[cfg(feature = "tile_id")]
-                    let mut t: Tile;
-
-                    t = Tile::new(t2.x, t2.y, t2.value, false);
-
-                    #[cfg(feature = "tile_id")]
-                    {
-                        t.id = t2.id;
-                    }
-                    #[cfg(feature = "tile_merged_from")]
-                    {
-                        t.merged_from = t2.merged_from;
-                    }
-                    universe[t2.y][t2.x] = Some(t);
-                }
-            }
-        }
+    // copy the current board and unset merged_from
+    let mut tiles = board.tiles;
+    for t in board.get_occupied_tiles() {
+        tiles[t.y][t.x] = Some(Tile {
+            merged_from: None,
+            ..t
+        })
     }
 
     let mut score = 0;
 
     // Merge
-    let mut merged_tiles: Vec<(usize, usize)> = vec![]; // we don't want to merge a tile more than once per turn
-    for _r in 0..32 {
+    let mut ids_checked_for_merge: Vec<usize> = vec![];
+    for _ in 0..MAX_MOVE_CHECKS {
         let b = Board {
-            tiles: universe,
+            tiles,
             height: board.height,
             width: board.width,
         };
         let occupied_tiles = b.get_occupied_tiles();
-        for t in &occupied_tiles {
-            if merged_tiles.contains(&(t.x, t.y)) || t.merged {
-                // Do nothing
-            } else {
-                let closest_opt = get_closest_tile(*t, &occupied_tiles, dir, t.value);
-                if let Some(closest) = closest_opt {
-                    if t.value == closest.value
-                        && !merged_tiles.contains(&(closest.x, closest.y))
-                        && !closest.merged
-                    {
-                        universe[t.y][t.x] = Some(Tile::new(t.x, t.y, 0, false));
+        let viable_tiles: Vec<Tile> = occupied_tiles
+            .iter()
+            .filter(|t| t.merged_from.is_none())
+            .map(|t| *t)
+            .collect();
+        if let Some(t) = viable_tiles
+            .iter()
+            .find(|t| !ids_checked_for_merge.contains(&t.id))
+        {
+            let closest_opt = get_closest_tile(*t, &occupied_tiles, dir, t.value);
+            if let Some(closest) = closest_opt {
+                if t.value == closest.value && closest.merged_from.is_none() {
+                    tiles[t.y][t.x] = Some(Tile::new(t.x, t.y, 0, None));
 
-                        #[cfg(not(feature = "tile_merged_from"))]
-                        let merged: Tile;
-                        #[cfg(feature = "tile_merged_from")]
-                        let mut merged: Tile;
+                    let merged: Tile = Tile {
+                        x: closest.x,
+                        y: closest.y,
+                        value: closest.value * 2,
+                        merged_from: Some([t.id, closest.id]),
+                        ..Default::default()
+                    };
 
-                        merged = Tile::new(closest.x, closest.y, closest.value * 2, true);
-
-                        #[cfg(feature = "tile_merged_from")]
-                        {
-                            merged.merged_from = Some([t.id, closest.id]);
-                        }
-
-                        score += merged.value;
-                        universe[closest.y][closest.x] = Some(merged);
-                        merged_tiles.push((merged.x, merged.y));
-                        was_changed = true;
-                        if crate::DEBUG_INFO {
-                            println!("Merge {:?} + {:?} -> {:?}", t, closest, merged)
-                        };
-                        break; // HOTFIX, we only want the first one before updating occupied_tiles again
-                    }
+                    score += merged.value;
+                    tiles[closest.y][closest.x] = Some(merged);
+                    was_changed = true;
                 }
             }
+            ids_checked_for_merge.push(t.id);
+        } else {
+            break;
         }
     }
 
     // Slide
-    let mut moved_tiles: Vec<Tile> = vec![];
-    for _r in 0..32 {
+    let mut moved_tiles: Vec<usize> = vec![];
+    for _ in 0..MAX_MOVE_CHECKS {
         let b = Board {
-            tiles: universe,
+            tiles,
             width: board.width,
             height: board.height,
         };
         let tiles_post = b.get_occupied_tiles();
-        let _free_tiles = b.get_non_occupied_tiles();
-        let all_tiles = b.get_all_tiles();
-        //println!("Free tiles: {}", free_tiles.len());
 
-        for t in &tiles_post {
-            if moved_tiles.contains(t) && false {
-                // Do nothing
+        if let Some(t) = tiles_post.iter().find(|t| !moved_tiles.contains(&t.id)) {
+            let all_tiles = b.get_all_tiles();
+            let dir_to_use = dir;
+            let farthest_free_opt = get_farthest_tile(*t, &all_tiles, dir_to_use, 0);
+
+            if let Some(farthest_free) = farthest_free_opt {
+                let new_tile: Tile = Tile {
+                    x: farthest_free.x,
+                    y: farthest_free.y,
+                    ..*t
+                };
+
+                tiles[t.y][t.x] = Some(Tile::new(t.x, t.y, 0, None));
+                tiles[farthest_free.y][farthest_free.x] = Some(new_tile);
+
+                was_changed = true;
+                moved_tiles = vec![];
             } else {
-                let dir_to_use = dir;
-                let farthest_free_opt = get_farthest_tile(*t, &all_tiles, dir_to_use, 0);
-
-                if let Some(farthest_free) = farthest_free_opt {
-                    #[cfg(not(feature = "tile_id"))]
-                    let new_tile: Tile;
-                    #[cfg(feature = "tile_id")]
-                    let mut new_tile: Tile;
-
-                    new_tile = Tile::new(farthest_free.x, farthest_free.y, t.value, false);
-
-                    #[cfg(feature = "tile_id")]
-                    {
-                        new_tile.id = t.id;
-                    }
-                    #[cfg(feature = "tile_merged_from")]
-                    {
-                        new_tile.merged_from = t.merged_from;
-                    }
-
-                    universe[t.y][t.x] = Some(Tile::new(t.x, t.y, 0, false));
-                    universe[farthest_free.y][farthest_free.x] = Some(new_tile);
-
-                    if crate::DEBUG_INFO {
-                        println!("Move {:?} -> {:?}", t, farthest_free)
-                    };
-                    moved_tiles.push(new_tile);
-                    was_changed = true;
-                    break; // HOTFIX, we only want the first one before updating tiles_post and free_tiles again
-                }
+                moved_tiles.push(t.id);
             }
+        } else {
+            break;
         }
     }
 
-    for y in 0..board.height {
-        for x in 0..board.width {
-            match universe[y][x] {
-                None => {
-                    if crate::DEBUG_INFO {
-                        println!("WARN: No tile at {}, {}", x, y)
-                    }
-                }
-                Some(t2) => {
-                    #[cfg(not(feature = "tile_id"))]
-                    let nt: Tile;
-                    #[cfg(feature = "tile_id")]
-                    let mut nt: Tile;
-
-                    nt = Tile::new(t2.x, t2.y, t2.value, false);
-                    #[cfg(feature = "tile_id")]
-                    {
-                        nt.id = t2.id;
-                    }
-                    #[cfg(feature = "tile_merged_from")]
-                    {
-                        nt.merged_from = t2.merged_from;
-                    }
-                    universe[y][x] = Some(nt);
-                }
-            }
-        }
-    }
-
-    return (universe, was_changed, score);
+    return MoveResult {
+        possible: was_changed,
+        tiles,
+        score_gain: score,
+    };
 }

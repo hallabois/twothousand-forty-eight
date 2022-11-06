@@ -1,5 +1,5 @@
 //! Provides functions to validate a [Recording](crate::recording::Recording)
-use crate::board::is_move_possible;
+use crate::board::check_move;
 use crate::board::print_board;
 use crate::board::tile::Tile;
 use crate::board::Board;
@@ -78,7 +78,7 @@ pub fn reconstruct_history(history: Recording) -> Result<HistoryReconstruction, 
         let dir = i.1;
         let addition = history.history[ind].2;
 
-        let predicted = is_move_possible(
+        let predicted = check_move(
             Board {
                 tiles: if ind > 0 && !last_was_break {
                     history_out[ind].tiles
@@ -90,31 +90,18 @@ pub fn reconstruct_history(history: Recording) -> Result<HistoryReconstruction, 
             },
             dir,
         );
-        let mut predicted_board = predicted.0;
-        score += predicted.2;
+        let mut predicted_board = predicted.tiles;
+        score += predicted.score_gain;
         max_score = usize::max(score, max_score);
 
         if ind < (history_len - 1) && ind < MAX_HISTORY_LENGTH {
             let board_next = history.history[ind + 1].0;
-            match addition {
-                Some(add) => {
-                    if crate::DEBUG_INFO {
-                        println!(
-                            "[Add] Change {:?} => {:?}",
-                            predicted_board[add.y][add.x], add
-                        )
-                    };
-                    if add.value > 4 {
-                        println!("Invalid addition value at {:?}!", add);
-                        return Err(ValidationError::InvalidAddition(ind, add));
-                    };
-                    predicted_board[add.y][add.x] = Some(add);
-                }
-                None => {
-                    if crate::DEBUG_INFO {
-                        println!("No addition at index {}!", ind)
-                    };
-                }
+            if let Some(add) = addition {
+                if add.value > 4 {
+                    println!("Invalid addition value at {:?}!", add);
+                    return Err(ValidationError::InvalidAddition(ind, add));
+                };
+                predicted_board[add.y][add.x] = Some(add);
             }
 
             let board_predicted = Board {
@@ -140,10 +127,18 @@ pub fn reconstruct_history(history: Recording) -> Result<HistoryReconstruction, 
                 last_was_break = true;
             } else {
                 println!(
-                    "Went wrong at index {}: \n{:?}\n{:?}",
-                    ind, predicted_board, board_next
+                    "Went wrong at index {} (move to {:?}): \n{:?}\n{:?}",
+                    ind, dir, predicted_board, board_next
                 );
                 //println!("{:#?}", i);
+                if ind > 0 {
+                    println!("Last board:");
+                    print_board(
+                        history_out.last().unwrap().tiles,
+                        history.width,
+                        history.height,
+                    );
+                }
                 println!("Expected: (score {}) ", expected_score);
                 print_board(predicted_board, history.width, history.height);
                 println!("Got instead: (score {}) ", actual_score);
@@ -164,7 +159,7 @@ pub fn reconstruct_history(history: Recording) -> Result<HistoryReconstruction, 
         Some(last_history) => {
             let last_board = last_history.0;
             for dir in direction::REAL_DIRECTIONS {
-                let predicted = is_move_possible(
+                let predicted = check_move(
                     Board {
                         tiles: last_board,
                         width: history.width,
@@ -172,7 +167,7 @@ pub fn reconstruct_history(history: Recording) -> Result<HistoryReconstruction, 
                     },
                     dir,
                 );
-                score_margin = score_margin.max(predicted.2);
+                score_margin = score_margin.max(predicted.score_gain);
             }
         }
     }
@@ -213,7 +208,7 @@ pub fn get_run_score(history: &Recording) -> usize {
     for i in &history.history {
         let board = i.0;
         let dir = i.1;
-        let predicted = is_move_possible(
+        let predicted = check_move(
             Board {
                 tiles: board,
                 width: history.width,
@@ -221,7 +216,7 @@ pub fn get_run_score(history: &Recording) -> usize {
             },
             dir,
         );
-        score += predicted.2;
+        score += predicted.score_gain;
     }
     score
 }

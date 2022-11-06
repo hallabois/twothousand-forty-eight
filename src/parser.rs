@@ -106,7 +106,7 @@ pub fn parse_data(data: String) -> Result<Recording, ParseError> {
                 .map_err(|_| ParseError::MissingTileValue(history_index))?;
             let x = index % width;
             let y = index / height;
-            board[y][x] = Some(board::tile::Tile::new(x, y, val, false));
+            board[y][x] = Some(board::tile::Tile::new(x, y, val, None));
             index += 1;
         }
 
@@ -132,7 +132,7 @@ pub fn parse_data(data: String) -> Result<Recording, ParseError> {
                 .ok_or(ParseError::InvalidAddition(history_index))?
                 .parse::<usize>()
                 .map_err(|_| ParseError::InvalidAddValue(history_index))?;
-            added_tile = Some(board::tile::Tile::new(added_x, added_y, added_value, false));
+            added_tile = Some(board::tile::Tile::new(added_x, added_y, added_value, None));
         }
 
         history.push((board, direction, added_tile));

@@ -1,4 +1,4 @@
-mod lib_testgames;
+pub mod lib_testgames;
 
 #[cfg(test)]
 mod board {
@@ -80,8 +80,8 @@ mod validator {
 
     #[test]
     fn history_reconstruction() {
-        use lib_testgames::GAME3X3;
-        let recording = parser::parse_data(String::from(GAME3X3)).unwrap();
+        use lib_testgames::GAME4X4;
+        let recording = parser::parse_data(String::from(GAME4X4)).unwrap();
         let history = recording.history.clone();
         let reconstruction = validator::reconstruct_history(recording.clone()).unwrap();
 
@@ -185,20 +185,16 @@ mod serializers {
 
     #[test]
     fn tile_serializer_null() {
-        let t = Tile::new(0, 0, 0, false);
+        let t = Tile::new(0, 0, 0, None);
         assert_eq!(t.to_json(), "null");
     }
 
     #[test]
-    #[cfg(feature = "tile_merged_from")]
-    #[cfg(feature = "tile_id")]
     fn tile_serializer_some() {
-        let t = Tile::new(0, 1, 4, false);
+        let t = Tile::new(0, 1, 4, None);
 
-        let re = Regex::new(
-            "\\{\"x\":0,\"y\":1,\"value\":4,\"merged\":false,\"id\":[0-9]+,\"merged_from\":null\\}",
-        )
-        .unwrap();
+        let re = Regex::new("\\{\"x\":0,\"y\":1,\"value\":4,\"id\":[0-9]+,\"merged_from\":null\\}")
+            .unwrap();
 
         println!("Matching against: {}", t.to_json());
 
@@ -224,11 +220,9 @@ mod history_hash {
 }
 
 #[cfg(test)]
-#[cfg(feature = "tile_merged_from")]
 mod tile_merged_from {
-    use crate::board;
+    use crate::board::{self, MoveResult};
     use board::Board;
-    // use board::tile::Tile;
 
     #[test]
     fn tile_merged_from_works_4x4() {
@@ -240,62 +234,39 @@ mod tile_merged_from {
         println!("Starting board:");
         board::print_board(game.tiles, 4, 4);
 
-        let (new_tiles, possible, _scoregain) =
-            board::is_move_possible(game, crate::direction::Direction::LEFT);
+        let MoveResult {
+            tiles,
+            possible,
+            score_gain: _,
+        } = board::check_move(game, crate::direction::Direction::LEFT);
         assert!(possible);
 
         println!("Board on next move:");
-        board::print_board(new_tiles, 4, 4);
+        board::print_board(tiles, 4, 4);
 
-        let nt = new_tiles[0][0].unwrap();
+        let nt = tiles[0][0].unwrap();
 
         assert_ne!(t1.id, nt.id);
         assert_ne!(t2.id, nt.id);
         println!("nt merged from: {:?}", nt.merged_from);
         assert!(nt.merged_from == Some([t1.id, t2.id]) || nt.merged_from == Some([t2.id, t1.id]));
 
-        game.tiles = new_tiles;
-        let (new_tiles, possible, _scoregain) =
-            board::is_move_possible(game, crate::direction::Direction::RIGHT);
+        game.tiles = tiles;
+        let MoveResult {
+            tiles,
+            possible,
+            score_gain: _,
+        } = board::check_move(game, crate::direction::Direction::RIGHT);
         assert!(possible);
 
         println!("Board on next move:");
-        board::print_board(new_tiles, 4, 4);
+        board::print_board(tiles, 4, 4);
 
-        let nt = new_tiles[0][0].unwrap();
+        let nt = tiles[0][0].unwrap();
 
         assert_ne!(t1.id, nt.id);
         assert_ne!(t2.id, nt.id);
         println!("nt merged from: {:?}", nt.merged_from);
         assert!(nt.merged_from.is_none());
-    }
-}
-
-#[cfg(test)]
-#[cfg(feature = "wasm")]
-mod wasm {
-    use super::lib_testgames;
-    use crate::validator;
-
-    // This test is quite slow (a lot of json parsing)
-    #[test]
-    fn validate_all_frames() {
-        let validation_result = crate::validate_all_frames(lib_testgames::GAME3X3);
-        let parsed: Vec<Option<Result<validator::ValidationData, validator::ValidationError>>> =
-            serde_json::from_str(&validation_result).unwrap();
-        println!("parsed: {:?}", parsed);
-        println!("parsed length: {}", parsed.len());
-
-        let first = parsed.get(0).unwrap();
-        println!("first: {:?}", first);
-        assert!(first.is_none());
-        let last = parsed.last().unwrap().clone();
-        println!("last: {:?}", last);
-        let unwrapped = last.unwrap();
-        let unwrapped = unwrapped.unwrap();
-        assert_eq!(unwrapped.score, 14212);
-        assert_eq!(unwrapped.breaks, 0);
-        assert_eq!(unwrapped.score_end, 14212);
-        assert_eq!(unwrapped.score_margin, 64);
     }
 }
