@@ -49,13 +49,17 @@ impl Tile {
         static COUNTER: AtomicUsize = AtomicUsize::new(1);
         COUNTER.fetch_add(1, Ordering::Relaxed)
     }
+
+    pub fn random_value(seed: usize) -> usize {
+        let possible_values: [usize; 4] = [2, 2, 2, 4];
+        *possible_values.pick_lcg(seed)
+    }
 }
 
 impl Default for Tile {
     fn default() -> Self {
-        let possible_values: [usize; 4] = [2, 2, 2, 4];
         let id = Self::get_new_id();
-        let value = *possible_values.pick_lcg(id);
+        let value = Self::random_value(id);
         Self {
             x: 0,
             y: 0,

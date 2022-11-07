@@ -25,9 +25,12 @@ pub fn get_random_tile_to_add(board: &board::Board, seed: Option<usize>) -> Opti
         });
         let t = possible.pick_lcg(seed);
 
+        let value = tile::Tile::random_value(seed);
+
         return Some(tile::Tile {
             x: t.x,
             y: t.y,
+            value,
             ..Default::default()
         });
     }
