@@ -15,6 +15,8 @@ use serde::Serialize;
 /// the validator will stop validating history beyond [MAX_HISTORY_LENGTH]
 const MAX_HISTORY_LENGTH: usize = usize::MAX;
 
+const MAX_ALLOWED_BREAKS: usize = 3;
+
 use thiserror::Error;
 #[derive(Error, Debug, Clone)]
 #[cfg_attr(feature = "wasm", derive(Serialize, Deserialize))]
@@ -39,6 +41,8 @@ pub struct ValidationData {
     pub score_margin: usize,
     /// Amount of breaks used
     pub breaks: usize,
+    /// When those breaks happened
+    pub break_positions: [Option<usize>; MAX_ALLOWED_BREAKS],
 }
 
 /// Validates the history continuity and returns the determined validity, score, possible score margin (caused when the last game move was not recorded) and break count.
@@ -70,7 +74,7 @@ pub fn reconstruct_history(history: Recording) -> Result<HistoryReconstruction, 
     }
 
     let mut breaks: usize = 0;
-    let mut last_was_break = false;
+    let mut break_positions = [None; MAX_ALLOWED_BREAKS];
     for ind in 0..history_len {
         let i = history.history[ind];
 
@@ -80,7 +84,7 @@ pub fn reconstruct_history(history: Recording) -> Result<HistoryReconstruction, 
 
         let predicted = check_move(
             Board {
-                tiles: if ind > 0 && !last_was_break {
+                tiles: if ind > 0 {
                     history_out[ind].tiles
                 } else {
                     board
@@ -104,7 +108,7 @@ pub fn reconstruct_history(history: Recording) -> Result<HistoryReconstruction, 
                 predicted_board[add.y][add.x] = Some(add);
             }
 
-            let board_predicted = Board {
+            let mut board_predicted = Board {
                 tiles: predicted_board,
                 width: history.width,
                 height: history.height,
@@ -117,14 +121,26 @@ pub fn reconstruct_history(history: Recording) -> Result<HistoryReconstruction, 
             let expected_score = board_predicted.get_total_value();
             let actual_score = board_actual.get_total_value();
 
-            last_was_break = false;
             if dir == Direction::END && expected_score == actual_score {
             } else if predicted_board == board_next { // (predicted.1) &&
             } else if breaks < 3 && (expected_score > actual_score) && score > 999 {
                 //Kurinpalautus / Parinkulautus
+                break_positions[breaks] = Some(ind);
                 breaks += 1;
                 score -= 1000;
-                last_was_break = true;
+
+                board_predicted.tiles = board_predicted.tiles.map(|c| {
+                    c.map(|t| match t {
+                        Some(tile) => {
+                            if tile.value >= 16 {
+                                Some(tile)
+                            } else {
+                                Some(Tile { value: 0, ..tile })
+                            }
+                        }
+                        None => None,
+                    })
+                });
             } else {
                 println!(
                     "Went wrong at index {} (move to {:?}): \n{:?}\n{:?}",
@@ -179,6 +195,7 @@ pub fn reconstruct_history(history: Recording) -> Result<HistoryReconstruction, 
             score_end: score,
             score_margin,
             breaks,
+            break_positions,
         },
         history: history_out,
     });
@@ -198,7 +215,6 @@ pub fn validate_first_move(history: &Recording) -> bool {
             return true;
         }
     }
-    println!("First move was not OK!");
     return false;
 }
 
