@@ -59,7 +59,7 @@ pub fn apply_move(board_data: &str, dir: usize, add_random: bool) -> String {
             height: b.height,
             tiles: result.tiles,
         };
-        crate::add_random_to_board(&mut game);
+        crate::add_random_to_board(&mut game, None);
         result.tiles = game.tiles;
     }
     return serde_json::to_string(&result).unwrap();
@@ -73,7 +73,7 @@ pub fn add_random(board_data: &str) -> String {
         height: b.height,
         tiles: b.tiles,
     };
-    add_random_to_board(&mut game);
+    add_random_to_board(&mut game, None);
     return serde_json::to_string(&game.tiles).unwrap();
 }
 
