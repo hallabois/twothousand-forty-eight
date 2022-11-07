@@ -2,8 +2,8 @@ use criterion::{criterion_group, criterion_main, Criterion};
 
 use twothousand_forty_eight::{add_random_to_board, board};
 
-fn is_move_possible(c: &mut Criterion) {
-    c.bench_function("board is_move_possible", |b| {
+fn check_move(c: &mut Criterion) {
+    c.bench_function("board check_move", |b| {
         b.iter(|| {
             let mut game = board::Board::new();
             add_random_to_board(&mut game);
@@ -16,5 +16,5 @@ fn is_move_possible(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, is_move_possible);
+criterion_group!(benches, check_move);
 criterion_main!(benches);

@@ -18,7 +18,7 @@ impl<T> Pickable<T> for Vec<T> {
         let max = self.len() as usize;
         let rnd = lcg_sane(seed);
 
-        let index: usize = (rnd % max).try_into().unwrap();
+        let index: usize = rnd % max;
         return &self[index];
     }
 }
@@ -27,7 +27,7 @@ impl<T, const SIZE: usize> Pickable<T> for [T; SIZE] {
         let max = self.len() as usize;
         let rnd = lcg_sane(seed);
 
-        let index: usize = (rnd % max).try_into().unwrap();
+        let index: usize = rnd % max;
         return &self[index];
     }
 }
