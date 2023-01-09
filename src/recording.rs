@@ -4,14 +4,12 @@ use crate::board::tile::Tile;
 use crate::board::Tiles;
 use crate::direction::Direction;
 
-#[cfg(feature = "serde_derive")]
 use serde::{Deserialize, Serialize};
 
 pub type History = Vec<(Tiles, Direction, Option<Tile>)>;
 
 /// Represents a recording of a played game of 2048, usually parsed from a string with [parser](crate::parser).
-#[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde_derive", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Recording {
     /// The width of the recorded game
     pub width: usize,

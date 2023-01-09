@@ -1,25 +1,25 @@
 //! Provides functions to validate a [Recording](crate::recording::Recording)
+use crate::add_random_to_board;
 use crate::board::check_move;
+use crate::board::create_tiles;
 use crate::board::print_board;
 use crate::board::tile::Tile;
 use crate::board::Board;
 use crate::direction;
 use crate::direction::Direction;
+use crate::parser::ParseDataV2;
 use crate::recording::Recording;
 
-#[cfg(feature = "wasm")]
 use serde::Deserialize;
-#[cfg(feature = "wasm")]
 use serde::Serialize;
 
 /// the validator will stop validating history beyond [MAX_HISTORY_LENGTH]
-const MAX_HISTORY_LENGTH: usize = usize::MAX;
+pub const MAX_HISTORY_LENGTH: usize = usize::MAX;
 
-const MAX_ALLOWED_BREAKS: usize = 3;
+pub const MAX_ALLOWED_BREAKS: usize = 3;
 
 use thiserror::Error;
-#[derive(Error, Debug, Clone)]
-#[cfg_attr(feature = "wasm", derive(Serialize, Deserialize))]
+#[derive(Error, Debug, Clone, Serialize, Deserialize)]
 pub enum ValidationError {
     #[error("invalid addition `{1:?}` on move {0}")]
     InvalidAddition(usize, Tile),
@@ -28,8 +28,7 @@ pub enum ValidationError {
     InvalidScore(usize, usize, usize),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg_attr(feature = "wasm", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct ValidationData {
     /// Depreciated, will always be true, specific errors are now returned on invalid games
     pub valid: bool,
@@ -122,7 +121,7 @@ pub fn reconstruct_history(history: Recording) -> Result<HistoryReconstruction, 
             let actual_score = board_actual.get_total_value();
 
             if dir == Direction::END && expected_score == actual_score {
-            } else if predicted_board == board_next { // (predicted.1) &&
+            } else if predicted_board == board_next {
             } else if breaks < 3 && (expected_score > actual_score) && score > 999 {
                 //Kurinpalautus / Parinkulautus
                 break_positions[breaks] = Some(ind);
@@ -235,4 +234,67 @@ pub fn get_run_score(history: &Recording) -> usize {
         score += predicted.score_gain;
     }
     score
+}
+
+pub fn initialize_board(width: usize, height: usize, seed: usize, add_tiles: usize) -> Board {
+    let mut board = Board {
+        width,
+        height,
+        tiles: create_tiles(width, height),
+    };
+
+    for _ in 0..add_tiles {
+        crate::add_random_to_board(&mut board, Some(seed));
+    }
+
+    board
+}
+
+#[derive(Error, Debug, Clone, Serialize, Deserialize)]
+pub enum MoveReplayError {
+    #[error("invalid move `{0:?}` on move {1}")]
+    InvalidMove(Direction, usize),
+
+    #[error("can't break on move {0} as {1}/{2} breaks have already been used")]
+    InvalidBreak(usize, usize, usize),
+}
+
+/// Intended for reconstructing V2 format games
+pub fn replay_moves(input: ParseDataV2) -> Result<HistoryReconstruction, MoveReplayError> {
+    let mut score: usize = 0;
+    let mut max_score: usize = 0;
+
+    let mut board = initialize_board(input.width, input.height, input.seed, 2);
+    let mut history_out: Vec<Board> = vec![board];
+
+    let breaks: usize = 0;
+    let break_positions = [None; MAX_ALLOWED_BREAKS];
+
+    let mut move_index = 0;
+    for mv in input.moves {
+        let mvchk = check_move(board, mv);
+
+        board.tiles = mvchk.tiles;
+        score += mvchk.score_gain;
+        max_score = usize::max(score, max_score);
+
+        if mvchk.possible {
+            add_random_to_board(&mut board, Some(input.seed + move_index));
+        }
+
+        history_out.push(board);
+        move_index += 1;
+    }
+
+    return Ok(HistoryReconstruction {
+        validation_data: ValidationData {
+            valid: true,
+            score: max_score,
+            score_end: score,
+            score_margin: 0,
+            breaks,
+            break_positions,
+        },
+        history: history_out,
+    });
 }

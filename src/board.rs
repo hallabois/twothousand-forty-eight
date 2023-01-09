@@ -2,7 +2,6 @@
 
 pub mod tile;
 use crate::direction::Direction;
-#[cfg(feature = "serde_derive")]
 use serde::{Deserialize, Serialize};
 use tile::Tile;
 
@@ -14,8 +13,7 @@ pub const MAX_HEIGHT: usize = 5;
 pub type Tiles = [[Option<Tile>; MAX_WIDTH]; MAX_HEIGHT];
 
 /// Holds game board data
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde_derive", derive(Serialize, Deserialize))]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Board {
     /// The width of the board. Value of 0 is untested
     pub width: usize,
@@ -100,39 +98,6 @@ impl Board {
         }
         return sum;
     }
-
-    /// Gives a string representation of the board that is compatible with our anticheat systems
-    #[cfg(feature = "serde_derive")]
-    pub fn oispahalla_serialize(&self, score: Option<usize>) -> String {
-        let score_str = match score {
-            Some(s) => s.to_string(),
-            None => String::from("-3735928559"),
-        };
-        let arr = self
-            .tiles
-            .iter()
-            .map(|row| {
-                row.iter()
-                    .map(|t| match t {
-                        Some(t) => t.to_json(),
-                        None => String::from("null"),
-                    })
-                    .collect::<Vec<String>>()
-            })
-            .collect::<Vec<Vec<String>>>();
-        let arr_str = format!(
-            "[{}]",
-            arr.iter()
-                .map(|row| row.join(","))
-                .collect::<Vec<String>>()
-                .iter()
-                .map(|s| format!("[{}]", s))
-                .collect::<Vec<String>>()
-                .join(",")
-        );
-        let out = format!("{{\"grid\":{{\"size\":{},\"cells\":{}}},\"score\":{},\"palautukset\":0,\"over\":false,\"won\":false,\"keepPlaying\":false}}", usize::max(self.width, self.height) , arr_str, score_str);
-        return out;
-    }
 }
 
 /// Initialize a new board with [Board::new]
@@ -203,55 +168,36 @@ pub fn get_closest_tile(
 ) -> Option<Tile> {
     let dir_x = dir.get_x();
     let dir_y = dir.get_y();
+    let move_is_vertical = dir_y == 0;
+    let vel = if move_is_vertical { dir_x } else { dir_y };
 
     let mut closest = None;
     let mut closest_dist: usize = usize::MAX;
+    let mut nearest_blocking = usize::MAX;
 
-    let mut nearest_block = usize::MAX;
-
-    let move_is_vertical = dir_y == 0;
-
+    let (a1, a2) = if move_is_vertical {
+        (t.x, t.y)
+    } else {
+        (t.y, t.x)
+    };
     for i in viable_tiles {
-        let condition = if move_is_vertical {
-            if dir_x > 0 {
-                t.x < i.x
-            } else {
-                t.x > i.x
-            }
+        let (b1, b2) = if move_is_vertical {
+            (i.x, i.y)
         } else {
-            if dir_y > 0 {
-                t.y < i.y
-            } else {
-                t.y > i.y
-            }
+            (i.y, i.x)
         };
+        let correct_direction = if vel > 0 { a1 < b1 } else { a1 > b1 };
+        let same_axis = a2 == b2;
 
-        if (if move_is_vertical {
-            t.y == i.y
-        } else {
-            t.x == i.x
-        }) && condition
-        {
-            let distance = if move_is_vertical {
-                if dir_x > 0 {
-                    i.x - t.x
-                } else {
-                    t.x - i.x
-                }
-            } else {
-                if dir_y > 0 {
-                    i.y - t.y
-                } else {
-                    t.y - i.y
-                }
-            };
+        if same_axis && correct_direction {
+            let distance = if vel > 0 { b1 - a1 } else { a1 - b1 };
 
             if distance != 0 && distance < closest_dist {
                 let recursed = get_closest_tile(*i, viable_tiles, dir, mask);
                 if let Some(r) = recursed {
                     if r.value == i.value && r.merged_from.is_none() {
                         // Let this tile merge with the one in the direction of the move
-                        nearest_block = distance;
+                        nearest_blocking = distance;
                     } else {
                         closest = Some(*i);
                         closest_dist = distance;
@@ -263,7 +209,7 @@ pub fn get_closest_tile(
             }
         }
     }
-    if nearest_block < closest_dist {
+    if nearest_blocking < closest_dist {
         return None;
     }
     return closest;
@@ -278,64 +224,45 @@ pub fn get_farthest_tile(
 ) -> Option<Tile> {
     let dir_x = dir.get_x();
     let dir_y = dir.get_y();
+    let move_is_vertical = dir_y == 0;
+    let vel = if move_is_vertical { dir_x } else { dir_y };
 
     let mut farthest = None;
     let mut farthest_dist: usize = usize::MIN;
+    let mut nearest_blocking = usize::MAX;
 
-    let mut nearest_block = usize::MAX;
-
-    let move_is_vertical = dir_y == 0;
-
+    let (a1, a2) = if move_is_vertical {
+        (t.x, t.y)
+    } else {
+        (t.y, t.x)
+    };
     for i in all_tiles {
-        let condition = if move_is_vertical {
-            if dir_x > 0 {
-                t.x < i.x
-            } else {
-                t.x > i.x
-            }
+        let (b1, b2) = if move_is_vertical {
+            (i.x, i.y)
         } else {
-            if dir_y > 0 {
-                t.y < i.y
-            } else {
-                t.y > i.y
-            }
+            (i.y, i.x)
         };
-        if (if move_is_vertical {
-            t.y == i.y
-        } else {
-            t.x == i.x
-        }) && condition
-        {
-            let distance = if move_is_vertical {
-                if dir_x > 0 {
-                    i.x - t.x
-                } else {
-                    t.x - i.x
-                }
-            } else {
-                if dir_y > 0 {
-                    i.y - t.y
-                } else {
-                    t.y - i.y
-                }
-            };
+        let correct_direction = if vel > 0 { a1 < b1 } else { a1 > b1 };
+        let same_axis = a2 == b2;
+        if same_axis && correct_direction {
+            let distance = if vel > 0 { b1 - a1 } else { a1 - b1 };
 
             if distance != 0 && distance > farthest_dist && i.value == mask {
                 farthest = Some(*i);
                 farthest_dist = distance;
-            } else if distance != 0 && i.value != mask && distance < nearest_block {
-                nearest_block = distance;
+            } else if distance != 0 && i.value != mask && distance < nearest_blocking {
+                nearest_blocking = distance;
             }
         }
     }
-    if nearest_block < farthest_dist {
+    if nearest_blocking < farthest_dist {
         return None;
     }
     return farthest;
 }
 
 const MAX_MOVE_CHECKS: usize = 256;
-#[cfg_attr(feature = "serde_derive", derive(Serialize, Deserialize))]
+#[derive(Serialize, Deserialize)]
 pub struct MoveResult {
     pub possible: bool,
     pub tiles: Tiles,

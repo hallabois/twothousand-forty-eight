@@ -1,6 +1,6 @@
 [package]
 name = "twothousand-forty-eight"
-version = "0.16.1"
+version = "0.16.2"
 edition = "2021"
 authors = ["xypine <elias.eskelinen@pm.me>"]
 license = "MIT"
@@ -17,9 +17,9 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 sha2 = {version = "0.9.8", optional = true}
 wasm-bindgen = {version = "0.2.78", optional = true}
-serde = {version = "1.0.130", optional = true, features = ["derive"]}
-serde_json = {version = "1.0.72", optional = true}
-thiserror = "1.0.37"
+serde = {version = "1.0", features = ["derive"]}
+serde_json = {version = "1.0"}
+thiserror = "1.0"
 
 [dev-dependencies]
 regex = "1.5"
@@ -37,15 +37,14 @@ harness = false
 name = "board"
 harness = false
 
-[features]
-default = ["history_hash", "serde_derive"]
-all = ["history_hash", "serde_derive", "wasm"]
-
-history_hash = ["sha2"]
-serde_derive = ["serde", "serde_json"]
-wasm = ["serde_derive", "wasm-bindgen"]
-
 [profile.release]
 strip = true  # Automatically strip symbols from the binary.
 lto = true
 opt-level = 3 # All optimizations
+
+[features]
+default = ["history_hash"]
+all = ["history_hash", "wasm"]
+
+history_hash = ["sha2"]
+wasm = ["wasm-bindgen"]

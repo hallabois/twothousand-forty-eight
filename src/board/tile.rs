@@ -1,12 +1,10 @@
-#[cfg(feature = "serde_derive")]
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::random::Pickable;
 
 /// Tile is a basic representation of the tiles on the game board.
-#[derive(Debug, Copy, Clone, Eq, Hash)]
-#[cfg_attr(feature = "serde_derive", derive(Serialize, Deserialize))]
+#[derive(Debug, Copy, Clone, Eq, Hash, Serialize, Deserialize)]
 pub struct Tile {
     /// x coordinate of the tile, usize is always greater than zero
     pub x: usize,
@@ -36,7 +34,6 @@ impl Tile {
     }
 
     /// Gives a json representation of the tile that is compatible with our anticheat systems
-    #[cfg(feature = "serde_derive")]
     pub fn to_json(&self) -> String {
         if self.value == 0 {
             return String::from("null");

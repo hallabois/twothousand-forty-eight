@@ -1,5 +1,7 @@
 // https://stackoverflow.com/questions/3062746/special-simple-random-number-generator
 
+use serde::{Deserialize, Serialize};
+
 // https://en.wikipedia.org/wiki/Linear_congruential_generator
 pub fn linear_congruential_generator(m: usize, a: usize, c: usize, seed: usize) -> usize {
     assert_ne!(seed, 0, "A seed of 0 will always return 0");
@@ -30,4 +32,9 @@ impl<T, const SIZE: usize> Pickable<T> for [T; SIZE] {
         let index: usize = rnd % max;
         return &self[index];
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum RandAlgo {
+    LCG,
 }

@@ -178,7 +178,6 @@ mod validator {
 }
 
 #[cfg(test)]
-#[cfg(feature = "serde_derive")]
 mod serializers {
     use crate::board::tile::Tile;
     use regex::Regex;
