@@ -5,7 +5,7 @@ use twothousand_forty_eight::{add_random_to_board, board};
 fn check_move(c: &mut Criterion) {
     c.bench_function("board check_move", |b| {
         b.iter(|| {
-            let mut game = board::Board::new();
+            let mut game = board::Board::default();
             add_random_to_board(&mut game, None);
             add_random_to_board(&mut game, None);
             board::check_move(game, twothousand_forty_eight::direction::Direction::UP);

@@ -5,4 +5,4 @@ This is a library written in rust, the documentation can be found at [docs.rs](h
 
 The most up-to-date version can be downloaded from [crates.io](https://crates.io/crates/twothousand-forty-eight) or the wasm version from [npm](https://www.npmjs.com/package/twothousand-forty-eight).
 
-See [LICENSE](LICENSE) for information on on the used license (MIT).
+See [LICENSE](LICENSE) for information on the used license (MIT).

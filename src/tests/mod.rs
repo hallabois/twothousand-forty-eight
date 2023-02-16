@@ -2,7 +2,7 @@ pub mod lib_testgames;
 
 #[cfg(test)]
 mod board {
-    use crate::board;
+    use crate::board::{self, has_possible_moves};
     use board::Board;
     #[test]
     fn creation_works() {
@@ -34,6 +34,13 @@ mod board {
                 }
             }
         }
+    }
+
+    #[test]
+    fn has_possible_moves_a() {
+        let mut board_a = Board::default();
+        board_a.set_tile(0, 0, 2);
+        assert!(has_possible_moves(board_a));
     }
 }
 
@@ -225,7 +232,7 @@ mod tile_merged_from {
 
     #[test]
     fn tile_merged_from_works_4x4() {
-        let mut game = Board::new();
+        let mut game = Board::default();
         game.set_tile(0, 0, 4);
         let t1 = game.tiles[0][0].unwrap();
         game.set_tile(1, 0, 4);

@@ -26,12 +26,12 @@ pub struct Board {
 }
 
 impl Board {
-    /// Create a new board with the height and width of 4 and initialize all tiles with [create_tiles]
-    pub fn new() -> Board {
+    /// Create a new board with a [width] and [height] and initialize all tiles
+    pub fn new(width: usize, height: usize) -> Board {
         Board {
-            width: 4,
-            height: 4,
-            tiles: create_tiles(4, 4),
+            width,
+            height,
+            tiles: create_tiles(width, height),
         }
     }
 
@@ -100,10 +100,10 @@ impl Board {
     }
 }
 
-/// Initialize a new board with [Board::new]
+/// Initialize a new 4x4 board with [Board::new]
 impl Default for Board {
     fn default() -> Board {
-        Board::new()
+        Board::new(4, 4)
     }
 }
 
@@ -159,7 +159,8 @@ pub fn create_tiles(width: usize, height: usize) -> Tiles {
     return tiles;
 }
 
-/// Return the closest tile with the value of "mask" to the tile "t" in the given direction "dir", if None is returned, no such tile was found.
+/// Return the closest tile with the value of "mask" to the tile "t" in the given direction "dir",
+/// if None is returned, no such tile was found.
 pub fn get_closest_tile(
     t: Tile,
     viable_tiles: &Vec<Tile>,
@@ -215,7 +216,8 @@ pub fn get_closest_tile(
     return closest;
 }
 
-/// Return the farthest tile with the value of "mask" to the tile "t" in the given direction "dir", if None is returned, no such tile was found.
+/// Return the farthest tile with the value of "mask" to the tile "t" in the given direction "dir",
+/// if None is returned, no such tile was found.
 pub fn get_farthest_tile(
     t: Tile,
     all_tiles: &Vec<Tile>,
@@ -273,6 +275,13 @@ pub fn check_move(board: Board, dir: Direction) -> MoveResult {
     if dir == Direction::END {
         return MoveResult {
             possible: true,
+            tiles: board.tiles,
+            score_gain: 0,
+        };
+    }
+    if !has_possible_moves(board) {
+        return MoveResult {
+            possible: false,
             tiles: board.tiles,
             score_gain: 0,
         };
@@ -373,4 +382,35 @@ pub fn check_move(board: Board, dir: Direction) -> MoveResult {
         tiles,
         score_gain: score,
     };
+}
+
+pub fn has_possible_moves(board: Board) -> bool {
+    const NEIGHBOUR_DIRECTIONS: [Direction; 4] = [
+        Direction::UP,
+        Direction::RIGHT,
+        Direction::DOWN,
+        Direction::LEFT,
+    ];
+    if board.get_non_occupied_tiles().len() > 0 {
+        return true;
+    }
+    for t in board.get_occupied_tiles() {
+        for dir in NEIGHBOUR_DIRECTIONS {
+            let (off_x, off_y) = (dir.get_x(), dir.get_y());
+            let x: i64 = t.x as i64 + off_x;
+            let y: i64 = t.y as i64 + off_y;
+            if (x < 0 || y < 0) || (x as usize > board.width - 1 || y as usize > board.height - 1) {
+                continue;
+            }
+            match board.tiles[y as usize][x as usize] {
+                Some(neighbour) => {
+                    if t.value == neighbour.value {
+                        return true;
+                    }
+                }
+                None => {}
+            }
+        }
+    }
+    false
 }
