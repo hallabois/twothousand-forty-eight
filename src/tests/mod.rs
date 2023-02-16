@@ -225,7 +225,7 @@ mod tile_merged_from {
 
     #[test]
     fn tile_merged_from_works_4x4() {
-        let mut game = Board::new();
+        let mut game = Board::default();
         game.set_tile(0, 0, 4);
         let t1 = game.tiles[0][0].unwrap();
         game.set_tile(1, 0, 4);

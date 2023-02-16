@@ -26,12 +26,12 @@ pub struct Board {
 }
 
 impl Board {
-    /// Create a new board with the height and width of 4 and initialize all tiles with [create_tiles]
-    pub fn new() -> Board {
+    /// Create a new board with a [width] and [height] and initialize all tiles
+    pub fn new(width: usize, height: usize) -> Board {
         Board {
-            width: 4,
-            height: 4,
-            tiles: create_tiles(4, 4),
+            width,
+            height,
+            tiles: create_tiles(width, height),
         }
     }
 
@@ -103,7 +103,7 @@ impl Board {
 /// Initialize a new board with [Board::new]
 impl Default for Board {
     fn default() -> Board {
-        Board::new()
+        Board::new(4, 4)
     }
 }
 
@@ -159,7 +159,8 @@ pub fn create_tiles(width: usize, height: usize) -> Tiles {
     return tiles;
 }
 
-/// Return the closest tile with the value of "mask" to the tile "t" in the given direction "dir", if None is returned, no such tile was found.
+/// Return the closest tile with the value of "mask" to the tile "t" in the given direction "dir",
+/// if None is returned, no such tile was found.
 pub fn get_closest_tile(
     t: Tile,
     viable_tiles: &Vec<Tile>,
@@ -215,7 +216,8 @@ pub fn get_closest_tile(
     return closest;
 }
 
-/// Return the farthest tile with the value of "mask" to the tile "t" in the given direction "dir", if None is returned, no such tile was found.
+/// Return the farthest tile with the value of "mask" to the tile "t" in the given direction "dir",
+/// if None is returned, no such tile was found.
 pub fn get_farthest_tile(
     t: Tile,
     all_tiles: &Vec<Tile>,
