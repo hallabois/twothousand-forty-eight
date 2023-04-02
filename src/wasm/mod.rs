@@ -50,6 +50,16 @@ pub fn validate_all_frames(data: &str) -> String {
 
 #[wasm_bindgen]
 pub fn apply_move(board_data: &str, dir: usize, add_random: bool) -> String {
+    apply_move_with_seed(board_data, dir, add_random, None)
+}
+
+#[wasm_bindgen]
+pub fn apply_move_with_seed(
+    board_data: &str,
+    dir: usize,
+    add_random: bool,
+    seed: Option<usize>,
+) -> String {
     let b = serde_json::from_str(board_data).unwrap();
     // let first_move_valid = validator::validate_first_move(&parsed);
     let mut result = board::check_move(b, direction::Direction::from_index(dir));
@@ -59,7 +69,7 @@ pub fn apply_move(board_data: &str, dir: usize, add_random: bool) -> String {
             height: b.height,
             tiles: result.tiles,
         };
-        crate::add_random_to_board(&mut game, None);
+        crate::add_random_to_board(&mut game, seed);
         result.tiles = game.tiles;
     }
     return serde_json::to_string(&result).unwrap();
@@ -67,13 +77,18 @@ pub fn apply_move(board_data: &str, dir: usize, add_random: bool) -> String {
 
 #[wasm_bindgen]
 pub fn add_random(board_data: &str) -> String {
+    add_random_with_seed(board_data, None)
+}
+
+#[wasm_bindgen]
+pub fn add_random_with_seed(board_data: &str, seed: Option<usize>) -> String {
     let b: board::Board = serde_json::from_str(board_data).unwrap();
     let mut game = board::Board {
         width: b.width,
         height: b.height,
         tiles: b.tiles,
     };
-    add_random_to_board(&mut game, None);
+    add_random_to_board(&mut game, seed);
     return serde_json::to_string(&game.tiles).unwrap();
 }
 

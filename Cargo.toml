@@ -1,6 +1,6 @@
 [package]
 name = "twothousand-forty-eight"
-version = "0.17.0"
+version = "0.18.0"
 edition = "2021"
 authors = ["xypine <elias.eskelinen@pm.me>"]
 license = "MIT"
@@ -43,7 +43,7 @@ lto = true
 opt-level = 3 # All optimizations
 
 [features]
-default = ["history_hash"]
+default = ["history_hash", "wasm"]
 all = ["history_hash", "wasm"]
 
 history_hash = ["sha2"]
