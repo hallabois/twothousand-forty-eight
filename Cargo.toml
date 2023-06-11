@@ -1,6 +1,6 @@
 [package]
 name = "twothousand-forty-eight"
-version = "0.18.0"
+version = "0.19.0"
 edition = "2021"
 authors = ["xypine <elias.eskelinen@pm.me>"]
 license = "MIT"
@@ -23,7 +23,12 @@ thiserror = "1.0"
 
 [dev-dependencies]
 regex = "1.5"
-criterion = { version = "0.3", features = ["html_reports"] }
+criterion = { version = "0.5", features = ["html_reports"] } # Used for benchmarking
+ratatui = { version = "0.21.0", features = ["all-widgets"]}
+anyhow = "1.0"
+crossterm = "0.26.1"
+rand = "0.8.5"
+rayon = "1.7.0"
 
 [[bench]]
 name = "validator"

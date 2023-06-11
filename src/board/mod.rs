@@ -1,9 +1,14 @@
 //! Provides [Board] to hold game board data and [tile] to hold the values of the board tiles.
 
 pub mod tile;
+pub mod tile_id_assigner;
+use std::fmt::Display;
+
 use crate::direction::Direction;
 use serde::{Deserialize, Serialize};
 use tile::Tile;
+
+use self::tile_id_assigner::{IDAssignment, TileIDAssigner};
 
 /// Max width of a board the program can handle. Be careful when increasing, as this increases memory use expotentially.
 pub const MAX_WIDTH: usize = 5;
@@ -23,22 +28,31 @@ pub struct Board {
 
     /// The tiles of the board, note that the size of the array is allocated based on the max size.
     pub tiles: Tiles,
+
+    /// How ids are assigned to the tiles on the board
+    pub id_assignment_strategy: IDAssignment,
 }
 
 impl Board {
     /// Create a new board with a [width] and [height] and initialize all tiles
-    pub fn new(width: usize, height: usize) -> Board {
+    pub fn new(width: usize, height: usize, id_assignment: IDAssignment) -> Board {
         Board {
             width,
             height,
-            tiles: create_tiles(width, height),
+            tiles: initialize_tiles(width, height, id_assignment),
+            id_assignment_strategy: id_assignment,
         }
     }
 
     /// Set a tile on the board and silently fail if the target tile doesn't exist and [DEBUG_INFO](crate::DEBUG_INFO) is disabled.
     pub fn set_tile(&mut self, x: usize, y: usize, val: usize) {
-        if let Some(_) = self.tiles[y][x] {
-            self.tiles[y][x] = Some(Tile::new(x, y, val, None));
+        if self.tiles[y][x].is_some() {
+            self.tiles[y][x] = Some(Tile::new(
+                x,
+                y,
+                val,
+                tile::InitialID::Strategy(self.id_assignment_strategy),
+            ));
         }
     }
 
@@ -87,76 +101,85 @@ impl Board {
 
     /// Get the combined value of all the tiles
     pub fn get_total_value(&self) -> usize {
-        let mut sum: usize = 0;
-        for row in self.tiles {
-            for i in row {
-                match i {
-                    Some(t) => sum += t.value,
-                    None => (),
-                }
-            }
+        self.get_all_tiles().iter().map(|t| t.value).sum()
+    }
+
+    /// Get the sum of all the tile ids, this is used for testing and debugging
+    // TODO: REMOVE
+    pub fn get_id_sum(&self) -> usize {
+        self.get_all_tiles().iter().map(|t| t.id).sum()
+    }
+
+    /// Move the board in the direction "dir" and return the score gained from the move
+    pub fn move_in_direction(&mut self, dir: Direction) -> Result<usize, ()> {
+        let result = check_move(*self, dir);
+        if result.possible {
+            *self = result.board;
+            Ok(result.score_gain)
+        } else {
+            Err(())
         }
-        return sum;
     }
 }
 
 /// Initialize a new 4x4 board with [Board::new]
 impl Default for Board {
     fn default() -> Board {
-        Board::new(4, 4)
+        Board::new(4, 4, IDAssignment::default())
     }
 }
 
-/// Print a debug visualization of the board
-pub fn print_board(
-    tiles: [[Option<tile::Tile>; MAX_WIDTH]; MAX_HEIGHT],
-    width: usize,
-    height: usize,
-) {
-    println!("{}", board_to_string(tiles, width, height));
+impl From<Tiles> for Board {
+    fn from(tiles: Tiles) -> Self {
+        let height = tiles.len();
+        let width = if height > 0 { tiles[0].len() } else { 0 };
+        Board {
+            width,
+            height,
+            tiles,
+            id_assignment_strategy: IDAssignment::Simple,
+        }
+    }
 }
 
 /// Return a debug visualization of the board
-pub fn board_to_string(
-    tiles: [[Option<tile::Tile>; MAX_WIDTH]; MAX_HEIGHT],
-    width: usize,
-    height: usize,
-) -> String {
-    let mut out = String::new();
-    for y in 0..height {
-        for x in 0..width {
-            match tiles[y][x] {
-                Some(i) => {
-                    let string = i.value.to_string();
-                    out += &format!("{}\t", string.as_str());
-                }
-                None => {
-                    out += "?\t";
+impl Display for Board {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut out = String::new();
+        for y in 0..self.height {
+            for x in 0..self.width {
+                match self.tiles[y][x] {
+                    Some(i) => {
+                        let string = i.value.to_string();
+                        out += &format!("{}\t", string.as_str());
+                    }
+                    None => {
+                        out += "?\t";
+                    }
                 }
             }
+            out += "\n";
         }
-        out += "\n";
+        write!(f, "{}", out)
     }
-    out
 }
 
 /// Initialize an array of empty tiles created with [Tile::new]
-pub fn create_tiles(width: usize, height: usize) -> Tiles {
+pub fn initialize_tiles(
+    width: usize,
+    height: usize,
+    id_assignement_strategy: IDAssignment,
+) -> Tiles {
     if width > MAX_WIDTH || height > MAX_HEIGHT {
         panic!("Board size too big! This version of the program has been compiled to support the maximum size of {:?}", (MAX_WIDTH, MAX_HEIGHT));
     }
     let mut tiles: Tiles = [[None; MAX_WIDTH]; MAX_HEIGHT];
     for x in 0..width {
         for y in 0..height {
-            tiles[y][x] = Some(Tile {
-                x,
-                y,
-                value: 0,
-                ..Default::default()
-            });
+            tiles[y][x] = Some(Tile::new(x, y, 0, id_assignement_strategy.into()));
         }
     }
-    return tiles;
+    tiles
 }
 
 /// Return the closest tile with the value of "mask" to the tile "t" in the given direction "dir",
@@ -165,7 +188,7 @@ pub fn get_closest_tile(
     t: Tile,
     viable_tiles: &Vec<Tile>,
     dir: Direction,
-    mask: usize,
+    mask: Option<usize>,
 ) -> Option<Tile> {
     let dir_x = dir.get_x();
     let dir_y = dir.get_y();
@@ -196,7 +219,11 @@ pub fn get_closest_tile(
             if distance != 0 && distance < closest_dist {
                 let recursed = get_closest_tile(*i, viable_tiles, dir, mask);
                 if let Some(r) = recursed {
-                    if r.value == i.value && r.merged_from.is_none() {
+                    let mask_matches = match mask {
+                        Some(m) => r.value == m,
+                        None => true,
+                    };
+                    if mask_matches && r.merged_from.is_none() {
                         // Let this tile merge with the one in the direction of the move
                         nearest_blocking = distance;
                     } else {
@@ -213,7 +240,7 @@ pub fn get_closest_tile(
     if nearest_blocking < closest_dist {
         return None;
     }
-    return closest;
+    closest
 }
 
 /// Return the farthest tile with the value of "mask" to the tile "t" in the given direction "dir",
@@ -222,7 +249,7 @@ pub fn get_farthest_tile(
     t: Tile,
     all_tiles: &Vec<Tile>,
     dir: Direction,
-    mask: usize,
+    mask: Option<usize>,
 ) -> Option<Tile> {
     let dir_x = dir.get_x();
     let dir_y = dir.get_y();
@@ -248,11 +275,15 @@ pub fn get_farthest_tile(
         let same_axis = a2 == b2;
         if same_axis && correct_direction {
             let distance = if vel > 0 { b1 - a1 } else { a1 - b1 };
+            let mask_matches = match mask {
+                Some(m) => i.value == m,
+                None => true,
+            };
 
-            if distance != 0 && distance > farthest_dist && i.value == mask {
+            if distance != 0 && distance > farthest_dist && mask_matches {
                 farthest = Some(*i);
                 farthest_dist = distance;
-            } else if distance != 0 && i.value != mask && distance < nearest_blocking {
+            } else if distance != 0 && !mask_matches && distance < nearest_blocking {
                 nearest_blocking = distance;
             }
         }
@@ -260,36 +291,39 @@ pub fn get_farthest_tile(
     if nearest_blocking < farthest_dist {
         return None;
     }
-    return farthest;
+    farthest
 }
 
 const MAX_MOVE_CHECKS: usize = 256;
 #[derive(Serialize, Deserialize)]
 pub struct MoveResult {
     pub possible: bool,
-    pub tiles: Tiles,
+    pub board: Board,
     pub score_gain: usize,
 }
+
 /// Check if a move is possible in the direction "dir"
 pub fn check_move(board: Board, dir: Direction) -> MoveResult {
+    // Copy the board so we don't modify the original, necessary for preserving the random state
+    let mut board = board.clone();
     if dir == Direction::END {
         return MoveResult {
             possible: true,
-            tiles: board.tiles,
+            board,
             score_gain: 0,
         };
     }
     if !has_possible_moves(board) {
         return MoveResult {
             possible: false,
-            tiles: board.tiles,
+            board,
             score_gain: 0,
         };
     }
 
     let mut was_changed = false;
 
-    // copy the current board and unset merged_from
+    // Copy the current board and unset merged_from
     let mut tiles = board.tiles;
     for t in board.get_occupied_tiles() {
         tiles[t.y][t.x] = Some(Tile {
@@ -307,21 +341,27 @@ pub fn check_move(board: Board, dir: Direction) -> MoveResult {
             tiles,
             height: board.height,
             width: board.width,
+            id_assignment_strategy: board.id_assignment_strategy,
         };
         let occupied_tiles = b.get_occupied_tiles();
         let viable_tiles: Vec<Tile> = occupied_tiles
             .iter()
             .filter(|t| t.merged_from.is_none())
-            .map(|t| *t)
+            .copied()
             .collect();
         if let Some(t) = viable_tiles
             .iter()
             .find(|t| !ids_checked_for_merge.contains(&t.id))
         {
-            let closest_opt = get_closest_tile(*t, &occupied_tiles, dir, t.value);
+            let closest_opt = get_closest_tile(*t, &occupied_tiles, dir, Some(t.value));
             if let Some(closest) = closest_opt {
                 if t.value == closest.value && closest.merged_from.is_none() {
-                    tiles[t.y][t.x] = Some(Tile::new(t.x, t.y, 0, None));
+                    tiles[t.y][t.x] = Some(Tile::new(
+                        t.x,
+                        t.y,
+                        0,
+                        tile::InitialID::Strategy(board.id_assignment_strategy),
+                    ));
 
                     let merged: Tile = Tile {
                         x: closest.x,
@@ -349,13 +389,14 @@ pub fn check_move(board: Board, dir: Direction) -> MoveResult {
             tiles,
             width: board.width,
             height: board.height,
+            id_assignment_strategy: board.id_assignment_strategy,
         };
         let tiles_post = b.get_occupied_tiles();
 
         if let Some(t) = tiles_post.iter().find(|t| !moved_tiles.contains(&t.id)) {
             let all_tiles = b.get_all_tiles();
             let dir_to_use = dir;
-            let farthest_free_opt = get_farthest_tile(*t, &all_tiles, dir_to_use, 0);
+            let farthest_free_opt = get_farthest_tile(*t, &all_tiles, dir_to_use, Some(0));
 
             if let Some(farthest_free) = farthest_free_opt {
                 let new_tile: Tile = Tile {
@@ -364,7 +405,12 @@ pub fn check_move(board: Board, dir: Direction) -> MoveResult {
                     ..*t
                 };
 
-                tiles[t.y][t.x] = Some(Tile::new(t.x, t.y, 0, None));
+                tiles[t.y][t.x] = Some(Tile::new(
+                    t.x,
+                    t.y,
+                    0,
+                    tile::InitialID::Strategy(board.id_assignment_strategy),
+                ));
                 tiles[farthest_free.y][farthest_free.x] = Some(new_tile);
 
                 was_changed = true;
@@ -377,40 +423,46 @@ pub fn check_move(board: Board, dir: Direction) -> MoveResult {
         }
     }
 
-    return MoveResult {
+    board.tiles = tiles;
+    MoveResult {
         possible: was_changed,
-        tiles,
+        board,
         score_gain: score,
-    };
+    }
 }
 
+/// Check if a move in any direction is possible
 pub fn has_possible_moves(board: Board) -> bool {
+    // If there are any empty tiles, there are possible moves
+    if !board.get_non_occupied_tiles().is_empty() {
+        return true;
+    }
+
+    // Check if any tiles can merge with their neighbours instead
     const NEIGHBOUR_DIRECTIONS: [Direction; 4] = [
         Direction::UP,
         Direction::RIGHT,
         Direction::DOWN,
         Direction::LEFT,
     ];
-    if board.get_non_occupied_tiles().len() > 0 {
-        return true;
-    }
     for t in board.get_occupied_tiles() {
         for dir in NEIGHBOUR_DIRECTIONS {
             let (off_x, off_y) = (dir.get_x(), dir.get_y());
             let x: i64 = t.x as i64 + off_x;
             let y: i64 = t.y as i64 + off_y;
             if (x < 0 || y < 0) || (x as usize > board.width - 1 || y as usize > board.height - 1) {
+                // Out of bounds
                 continue;
             }
-            match board.tiles[y as usize][x as usize] {
-                Some(neighbour) => {
-                    if t.value == neighbour.value {
-                        return true;
-                    }
+            if let Some(neighbour) = board.tiles[y as usize][x as usize] {
+                if t.value == neighbour.value {
+                    // There is a possible merge
+                    return true;
                 }
-                None => {}
             }
         }
     }
+
+    // No possible moves
     false
 }

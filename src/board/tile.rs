@@ -3,7 +3,10 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::random::Pickable;
 
+use super::tile_id_assigner::IDAssignment;
+
 /// Tile is a basic representation of the tiles on the game board.
+#[allow(clippy::derive_hash_xor_eq)]
 #[derive(Debug, Copy, Clone, Eq, Hash, Serialize, Deserialize)]
 pub struct Tile {
     /// x coordinate of the tile, usize is always greater than zero
@@ -21,14 +24,42 @@ pub struct Tile {
     pub merged_from: Option<[usize; 2]>,
 }
 
+pub enum InitialID {
+    Id(usize),
+    Strategy(IDAssignment),
+}
+impl From<usize> for InitialID {
+    fn from(id: usize) -> Self {
+        Self::Id(id)
+    }
+}
+impl Default for InitialID {
+    fn default() -> Self {
+        Self::Strategy(IDAssignment::default())
+    }
+}
+impl From<Option<usize>> for InitialID {
+    fn from(id: Option<usize>) -> Self {
+        match id {
+            Some(id) => Self::Id(id),
+            None => Self::default(),
+        }
+    }
+}
+impl From<IDAssignment> for InitialID {
+    fn from(id_assignment_strategy: IDAssignment) -> Self {
+        Self::Strategy(id_assignment_strategy)
+    }
+}
+
 impl Tile {
     /// Create a new tile. If the "tile_id" feature is enabled, a new unique identifier will be assigned to the generated tile if none was provided.
-    pub fn new(x: usize, y: usize, value: usize, id: Option<usize>) -> Tile {
+    pub fn new(x: usize, y: usize, value: usize, id: InitialID) -> Tile {
         Tile {
             x,
             y,
             value,
-            id: id.unwrap_or(Self::get_new_id()),
+            id: Self::get_id(id),
             ..Default::default()
         }
     }
@@ -41,10 +72,25 @@ impl Tile {
         serde_json::to_string(self).unwrap()
     }
 
-    /// Provides a new identifier upon every call, essentially just incrementing the previous by one.
-    fn get_new_id() -> usize {
-        static COUNTER: AtomicUsize = AtomicUsize::new(1);
-        COUNTER.fetch_add(1, Ordering::Relaxed)
+    fn get_id(id: InitialID) -> usize {
+        match id {
+            InitialID::Id(id) => id,
+            InitialID::Strategy(mut id_assignment_strategy) => {
+                Self::get_new_id_from_assignment_strategy(&mut id_assignment_strategy)
+            }
+        }
+    }
+    fn get_new_id_from_assignment_strategy(assignment_strategy: &mut IDAssignment) -> usize {
+        match assignment_strategy {
+            IDAssignment::Simple => {
+                // Provides a new identifier upon every call, incrementing the previous by one.
+                static COUNTER: AtomicUsize = AtomicUsize::new(1);
+                COUNTER.fetch_add(1, Ordering::Relaxed)
+            }
+            IDAssignment::Seeded(seed) => crate::random::lcg_sane(*seed),
+            IDAssignment::SimpleControlled(mut state) => state.next_id(),
+            IDAssignment::SeededControlled(mut state) => crate::random::lcg_sane(state.next_id()),
+        }
     }
 
     pub fn random_value(seed: usize) -> usize {
@@ -55,7 +101,8 @@ impl Tile {
 
 impl Default for Tile {
     fn default() -> Self {
-        let id = Self::get_new_id();
+        let id_assignment_strategy = IDAssignment::default();
+        let id = Self::get_id(InitialID::Strategy(id_assignment_strategy));
         let value = Self::random_value(id);
         Self {
             x: 0,

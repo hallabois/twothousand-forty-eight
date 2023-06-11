@@ -22,46 +22,6 @@ pub struct Recording {
 }
 
 impl Recording {
-    /// Converts the recording back to a format the [parser](crate::parser) can read.
-    pub fn to_string(&self) -> String {
-        let mut out = "".to_owned();
-        let mut index: usize = 0;
-        for i in self.clone().history {
-            let board = crate::board::Board {
-                tiles: i.0,
-                width: self.width,
-                height: self.height,
-            };
-            let tiles = board.get_all_tiles();
-            out = out
-                + tiles
-                    .iter()
-                    .map(|t| t.value.to_string())
-                    .collect::<Vec<String>>()
-                    .join(".")
-                    .as_str();
-            out = out + "+";
-            match i.2 {
-                None => out = out + "",
-                Some(t) => {
-                    out = out
-                        + t.x.to_string().as_str()
-                        + ","
-                        + t.y.to_string().as_str()
-                        + "."
-                        + t.value.to_string().as_str()
-                }
-            }
-            out = out + ";";
-            out = out + i.1.get_index();
-            if index < self.history.len() - 1 {
-                out = out + ":";
-            }
-            index += 1;
-        }
-        return out;
-    }
-
     /// Returns a hash of the history. The hash is only composed from the move directions and is not affected by any board data changes.
     /// This is far cheaper and invalid board data or score changes should be catched by the [validator](crate::validator) anyways.
     #[cfg(feature = "history_hash")]
@@ -74,7 +34,66 @@ impl Recording {
         for i in &self.history {
             hasher.update(i.1.get_index().as_bytes());
         }
-        let out = format!("{:X}", hasher.finalize());
-        return out;
+        format!("{:X}", hasher.finalize())
+    }
+}
+
+impl std::fmt::Display for Recording {
+    /// Converts the recording back to a format the [parser](crate::parser) can read.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut out = "".to_owned();
+        for (index, i) in self.clone().history.into_iter().enumerate() {
+            let board = crate::board::Board {
+                tiles: i.0,
+                width: self.width,
+                height: self.height,
+                ..Default::default()
+            };
+            let tiles = board.get_all_tiles();
+            out += tiles
+                .iter()
+                .map(|t| t.value.to_string())
+                .collect::<Vec<String>>()
+                .join(".")
+                .as_str();
+            out += "+";
+            if let Some(t) = i.2 {
+                out = out
+                    + t.x.to_string().as_str()
+                    + ","
+                    + t.y.to_string().as_str()
+                    + "."
+                    + t.value.to_string().as_str()
+            }
+            out += ";";
+            out += i.1.get_index();
+            if index < self.history.len() - 1 {
+                out += ":";
+            }
+        }
+        write!(f, "{}", out)
+    }
+}
+
+pub struct SeededRecording {
+    pub version: u8,
+    pub seed: u64,
+    pub width: u8,
+    pub height: u8,
+    pub moves: Vec<Direction>,
+}
+
+impl SeededRecording {
+    pub fn get_board_at_move(
+        &self,
+        move_index: usize,
+        id_assignment: crate::board::tile_id_assigner::IDAssignment,
+    ) -> Result<crate::board::Board, ()> {
+        let mut board =
+            crate::board::Board::new(self.width as usize, self.height as usize, id_assignment);
+        for i in 0..=move_index {
+            board.move_in_direction(self.moves[i])?;
+        }
+        Ok(board)
     }
 }

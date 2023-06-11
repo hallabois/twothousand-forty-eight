@@ -2,6 +2,7 @@
 //!
 //! Includes wasm bindings generated with wasm_bindgen
 
+#[allow(clippy::needless_range_loop)]
 pub mod board;
 pub mod direction;
 pub mod parser;
@@ -18,7 +19,7 @@ pub fn get_random_tile_to_add(board: &board::Board, seed: Option<usize>) -> Opti
     use random::Pickable;
 
     let possible = board.get_non_occupied_tiles();
-    if possible.len() > 0 {
+    if !possible.is_empty() {
         let seed = seed.unwrap_or_else(|| {
             let total_value = board.get_total_value();
             possible.len() + total_value

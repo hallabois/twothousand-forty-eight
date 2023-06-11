@@ -1,5 +1,6 @@
 use crate::board;
-use crate::board::create_tiles;
+use crate::board::initialize_tiles;
+use crate::board::tile_id_assigner::IDAssignment;
 use crate::direction::Direction;
 use crate::random::RandAlgo;
 use crate::recording::History;
@@ -29,8 +30,8 @@ pub enum ParseError {
     #[error("missing move direction on move {0}")]
     MissingDirection(usize),
 
-    #[error("missing move direction on move {0}")]
-    MissingTileValue(usize),
+    #[error("missing tile value on move {0}")]
+    InvalidTileValue(usize),
 
     #[error("missing x position for addition on move {0}")]
     MissingAddX(usize),
@@ -62,17 +63,17 @@ pub enum ParseError {
 ///         - [Direction] index of the move on the right side
 ///
 /// e.g. ```4x4S0.0.0.0.0.0.0.0.0.0.0.0.0.0.2.2+2,1.2;1```
-pub fn parse_data(data: String) -> Result<Recording, ParseError> {
+pub fn parse_data(data: &str) -> Result<Recording, ParseError> {
     let mut history: History = vec![];
     let mut width = 4;
     let mut height = 4;
-    let mut historypart = data.clone();
-    if data.split("S").collect::<Vec<&str>>().len() > 1 {
-        let parts = data.split("S").collect::<Vec<&str>>();
-        historypart = parts.get(1).ok_or(ParseError::MissingHistory)?.to_string();
-        let dimensions = parts[0].split("x").collect::<Vec<&str>>();
+    let mut historypart = data;
+    let parts: Vec<&str> = data.split('S').collect();
+    if parts.len() > 1 {
+        historypart = parts.get(1).ok_or(ParseError::MissingHistory)?;
+        let dimensions = parts[0].split('x').collect::<Vec<&str>>();
         width = dimensions
-            .get(0)
+            .first()
             .ok_or(ParseError::MissingWidth)?
             .parse::<usize>()
             .map_err(|_| ParseError::InvalidWidth)?;
@@ -82,42 +83,39 @@ pub fn parse_data(data: String) -> Result<Recording, ParseError> {
             .parse::<usize>()
             .map_err(|_| ParseError::InvalidWidth)?;
     }
-    let mut history_index = 0;
-    for step in historypart.split(":") {
-        let parts = step.split(";").collect::<Vec<&str>>();
-        let bdata = parts[0].split("+").collect::<Vec<&str>>();
+    for (history_index, step) in historypart.split(':').enumerate() {
+        let parts = step.split(';').collect::<Vec<&str>>();
+        let bdata = parts[0].split('+').collect::<Vec<&str>>();
         let mut added = "";
         if bdata.len() > 1 {
             added = bdata[1];
         }
         let b = *bdata
-            .get(0)
+            .first()
             .ok_or(ParseError::MissingBoard(history_index))?;
-        let mut board = create_tiles(width, height);
+        let mut tiles = initialize_tiles(width, height, IDAssignment::default());
         let dir = parts
             .get(1)
             .ok_or(ParseError::MissingDirection(history_index))?;
         let direction = Direction::from_index_str(dir);
-        let mut index: usize = 0;
-        for i in b.split(".") {
-            let val = i
+        for (index, value) in b.split('.').enumerate() {
+            let val = value
                 .parse::<usize>()
-                .map_err(|_| ParseError::MissingTileValue(history_index))?;
+                .map_err(|_| ParseError::InvalidTileValue(history_index))?;
             let x = index % width;
             let y = index / height;
-            board[y][x] = Some(board::tile::Tile::new(x, y, val, None));
-            index += 1;
+            tiles[y][x] = Some(board::tile::Tile::new(x, y, val, None.into()));
         }
 
         let mut added_tile = None;
-        if added != "" {
-            let added_vals = added.split(".").collect::<Vec<&str>>();
+        if !added.is_empty() {
+            let added_vals = added.split('.').collect::<Vec<&str>>();
             let added_index = added_vals
-                .get(0)
+                .first()
                 .ok_or(ParseError::InvalidAddition(history_index))?;
-            let added_pos = added_index.split(",").collect::<Vec<&str>>();
+            let added_pos = added_index.split(',').collect::<Vec<&str>>();
             let added_x = added_pos
-                .get(0)
+                .first()
                 .ok_or(ParseError::MissingAddX(history_index))?
                 .parse::<usize>()
                 .map_err(|_| ParseError::InvalidAddX(history_index))?;
@@ -131,17 +129,21 @@ pub fn parse_data(data: String) -> Result<Recording, ParseError> {
                 .ok_or(ParseError::InvalidAddition(history_index))?
                 .parse::<usize>()
                 .map_err(|_| ParseError::InvalidAddValue(history_index))?;
-            added_tile = Some(board::tile::Tile::new(added_x, added_y, added_value, None));
+            added_tile = Some(board::tile::Tile::new(
+                added_x,
+                added_y,
+                added_value,
+                None.into(),
+            ));
         }
 
-        history.push((board, direction, added_tile));
-        history_index += 1;
+        history.push((tiles, direction, added_tile));
     }
-    return Ok(Recording {
+    Ok(Recording {
         history,
         width,
         height,
-    });
+    })
 }
 
 fn default_size() -> usize {
