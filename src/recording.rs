@@ -77,7 +77,7 @@ impl std::fmt::Display for Recording {
 
 pub struct SeededRecording {
     pub version: u8,
-    pub seed: u64,
+    pub seed: usize,
     pub width: u8,
     pub height: u8,
     pub moves: Vec<Direction>,
@@ -89,10 +89,14 @@ impl SeededRecording {
         move_index: usize,
         id_assignment: crate::board::tile_id_assigner::IDAssignment,
     ) -> Result<crate::board::Board, ()> {
-        let mut board =
-            crate::board::Board::new(self.width as usize, self.height as usize, id_assignment);
+        let mut board = crate::board::Board::new(
+            self.width as usize,
+            self.height as usize,
+            id_assignment,
+            Some(self.seed),
+        );
         for i in 0..=move_index {
-            board.move_in_direction(self.moves[i])?;
+            board.move_in_direction(self.moves[i]).map_err(|_| ())?;
         }
         Ok(board)
     }

@@ -69,6 +69,7 @@ pub fn parse_data(data: &str) -> Result<Recording, ParseError> {
     let mut height = 4;
     let mut historypart = data;
     let parts: Vec<&str> = data.split('S').collect();
+    let mut rng_state = 0;
     if parts.len() > 1 {
         historypart = parts.get(1).ok_or(ParseError::MissingHistory)?;
         let dimensions = parts[0].split('x').collect::<Vec<&str>>();
@@ -93,7 +94,7 @@ pub fn parse_data(data: &str) -> Result<Recording, ParseError> {
         let b = *bdata
             .first()
             .ok_or(ParseError::MissingBoard(history_index))?;
-        let mut tiles = initialize_tiles(width, height, IDAssignment::default());
+        let mut tiles = initialize_tiles(width, height, IDAssignment::default(), &mut 0);
         let dir = parts
             .get(1)
             .ok_or(ParseError::MissingDirection(history_index))?;
@@ -104,7 +105,12 @@ pub fn parse_data(data: &str) -> Result<Recording, ParseError> {
                 .map_err(|_| ParseError::InvalidTileValue(history_index))?;
             let x = index % width;
             let y = index / height;
-            tiles[y][x] = Some(board::tile::Tile::new(x, y, val, None.into()));
+            tiles[y][x] = Some(board::tile::Tile::new(
+                x,
+                y,
+                val,
+                board::tile::InitialID::Strategy(IDAssignment::default(), &mut rng_state),
+            ));
         }
 
         let mut added_tile = None;
@@ -133,7 +139,7 @@ pub fn parse_data(data: &str) -> Result<Recording, ParseError> {
                 added_x,
                 added_y,
                 added_value,
-                None.into(),
+                board::tile::InitialID::Strategy(IDAssignment::default(), &mut rng_state),
             ));
         }
 

@@ -22,7 +22,6 @@ serde_json = {version = "1.0"}
 thiserror = "1.0"
 
 [dev-dependencies]
-regex = "1.5"
 criterion = { version = "0.5", features = ["html_reports"] } # Used for benchmarking
 ratatui = { version = "0.21.0", features = ["all-widgets"]}
 anyhow = "1.0"

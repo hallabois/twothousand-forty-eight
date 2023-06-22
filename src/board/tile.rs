@@ -3,10 +3,10 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::random::Pickable;
 
-use super::tile_id_assigner::IDAssignment;
+use super::tile_id_assigner::{IDAssignment, TileIDAssigner};
 
 /// Tile is a basic representation of the tiles on the game board.
-#[allow(clippy::derive_hash_xor_eq)]
+#[allow(clippy::derived_hash_with_manual_eq)]
 #[derive(Debug, Copy, Clone, Eq, Hash, Serialize, Deserialize)]
 pub struct Tile {
     /// x coordinate of the tile, usize is always greater than zero
@@ -24,31 +24,33 @@ pub struct Tile {
     pub merged_from: Option<[usize; 2]>,
 }
 
-pub enum InitialID {
+pub enum InitialID<'a> {
     Id(usize),
-    Strategy(IDAssignment),
+    Strategy(IDAssignment, &'a mut usize),
 }
-impl From<usize> for InitialID {
+impl From<usize> for InitialID<'_> {
     fn from(id: usize) -> Self {
         Self::Id(id)
     }
 }
-impl Default for InitialID {
+/*
+impl Default for InitialID<'_> {
     fn default() -> Self {
-        Self::Strategy(IDAssignment::default())
+        Self::Strategy(IDAssignment::default(), 0)
     }
 }
-impl From<Option<usize>> for InitialID {
+impl From<Option<usize>> for InitialID<'_> {
     fn from(id: Option<usize>) -> Self {
         match id {
             Some(id) => Self::Id(id),
             None => Self::default(),
         }
     }
-}
-impl From<IDAssignment> for InitialID {
-    fn from(id_assignment_strategy: IDAssignment) -> Self {
-        Self::Strategy(id_assignment_strategy)
+} */
+impl<'a> From<(IDAssignment, &'a mut usize)> for InitialID<'a> {
+    fn from(state: (IDAssignment, &'a mut usize)) -> Self {
+        let (id_assignment_strategy, rng_state) = state;
+        Self::Strategy(id_assignment_strategy, rng_state)
     }
 }
 
@@ -59,7 +61,7 @@ impl Tile {
             x,
             y,
             value,
-            id: Self::get_id(id),
+            id: Self::get_id(id, x, y),
             ..Default::default()
         }
     }
@@ -72,24 +74,33 @@ impl Tile {
         serde_json::to_string(self).unwrap()
     }
 
-    fn get_id(id: InitialID) -> usize {
+    fn get_id(id: InitialID, x: usize, y: usize) -> usize {
         match id {
             InitialID::Id(id) => id,
-            InitialID::Strategy(mut id_assignment_strategy) => {
-                Self::get_new_id_from_assignment_strategy(&mut id_assignment_strategy)
+            InitialID::Strategy(id_assignment_strategy, rng_state) => {
+                Self::get_new_id_from_assignment_strategy(id_assignment_strategy, rng_state, x, y)
             }
         }
     }
-    fn get_new_id_from_assignment_strategy(assignment_strategy: &mut IDAssignment) -> usize {
+    fn get_new_id_from_assignment_strategy(
+        assignment_strategy: IDAssignment,
+        rng_state: &mut usize,
+        x: usize,
+        y: usize,
+    ) -> usize {
         match assignment_strategy {
             IDAssignment::Simple => {
                 // Provides a new identifier upon every call, incrementing the previous by one.
                 static COUNTER: AtomicUsize = AtomicUsize::new(1);
                 COUNTER.fetch_add(1, Ordering::Relaxed)
             }
-            IDAssignment::Seeded(seed) => crate::random::lcg_sane(*seed),
-            IDAssignment::SimpleControlled(mut state) => state.next_id(),
-            IDAssignment::SeededControlled(mut state) => crate::random::lcg_sane(state.next_id()),
+            IDAssignment::SimpleStateful => TileIDAssigner::next_id(rng_state),
+            IDAssignment::RandomStateful => {
+                crate::random::lcg_sane(TileIDAssigner::next_id(rng_state))
+            }
+            IDAssignment::RandomStatefulPositionBased => {
+                crate::random::lcg_sane(*rng_state + x + y)
+            }
         }
     }
 
@@ -102,7 +113,7 @@ impl Tile {
 impl Default for Tile {
     fn default() -> Self {
         let id_assignment_strategy = IDAssignment::default();
-        let id = Self::get_id(InitialID::Strategy(id_assignment_strategy));
+        let id = Self::get_id(InitialID::Strategy(id_assignment_strategy, &mut 0), 0, 0);
         let value = Self::random_value(id);
         Self {
             x: 0,

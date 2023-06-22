@@ -16,12 +16,15 @@ fn check_move_two(c: &mut Criterion) {
         Box::new(|bencher| {
             bencher.iter(|| {
                 let mut game = board::Board::default();
-                add_random_to_board(&mut game, None);
-                add_random_to_board(&mut game, None);
-                board::check_move(game, twothousand_forty_eight::direction::Direction::UP);
-                board::check_move(game, twothousand_forty_eight::direction::Direction::RIGHT);
-                board::check_move(game, twothousand_forty_eight::direction::Direction::DOWN);
-                board::check_move(game, twothousand_forty_eight::direction::Direction::LEFT);
+                add_random_to_board(&mut game);
+                add_random_to_board(&mut game);
+                let _ = board::check_move(game, twothousand_forty_eight::direction::Direction::UP);
+                let _ =
+                    board::check_move(game, twothousand_forty_eight::direction::Direction::RIGHT);
+                let _ =
+                    board::check_move(game, twothousand_forty_eight::direction::Direction::DOWN);
+                let _ =
+                    board::check_move(game, twothousand_forty_eight::direction::Direction::LEFT);
             })
         }),
     );
@@ -34,14 +37,17 @@ fn check_move_four(c: &mut Criterion) {
         Box::new(|bencher| {
             bencher.iter(|| {
                 let mut game = board::Board::default();
-                add_random_to_board(&mut game, None);
-                add_random_to_board(&mut game, None);
-                add_random_to_board(&mut game, None);
-                add_random_to_board(&mut game, None);
-                board::check_move(game, twothousand_forty_eight::direction::Direction::UP);
-                board::check_move(game, twothousand_forty_eight::direction::Direction::RIGHT);
-                board::check_move(game, twothousand_forty_eight::direction::Direction::DOWN);
-                board::check_move(game, twothousand_forty_eight::direction::Direction::LEFT);
+                add_random_to_board(&mut game);
+                add_random_to_board(&mut game);
+                add_random_to_board(&mut game);
+                add_random_to_board(&mut game);
+                let _ = board::check_move(game, twothousand_forty_eight::direction::Direction::UP);
+                let _ =
+                    board::check_move(game, twothousand_forty_eight::direction::Direction::RIGHT);
+                let _ =
+                    board::check_move(game, twothousand_forty_eight::direction::Direction::DOWN);
+                let _ =
+                    board::check_move(game, twothousand_forty_eight::direction::Direction::LEFT);
             })
         }),
     );

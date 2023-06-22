@@ -4,8 +4,8 @@ use twothousand_forty_eight::parser;
 use twothousand_forty_eight::recording::Recording;
 use twothousand_forty_eight::validator;
 
-pub const GAMEOBSCENE: &str = include_str!("../games/GAME4X4BIG.txt");
-pub const GAMELIST: &str = include_str!("../games/composite.txt");
+pub const GAMEOBSCENE: &str = include_str!("../games/v1/GAME4X4BIG.txt");
+pub const GAMELIST: &str = include_str!("../games/v1/composite.txt");
 pub fn get_random_game() -> &'static str {
     let mut rng = rand::thread_rng();
     let games: Vec<&str> = GAMELIST.split("\n").collect();

@@ -15,25 +15,30 @@ use std::io::{self, Stdout};
 use twothousand_forty_eight::board::Board;
 struct GameState {
     board: Board,
-    random_seed: usize,
     move_count: usize,
     score: usize,
     high_score: usize,
     game_over: bool,
+    error: String,
 }
 impl Default for GameState {
     fn default() -> Self {
         let random_seed = 1;
-        let mut board = Board::default();
-        twothousand_forty_eight::add_random_to_board(&mut board, Some(random_seed));
-        twothousand_forty_eight::add_random_to_board(&mut board, Some(random_seed));
+        let mut board = Board::new(
+            4,
+            4,
+            twothousand_forty_eight::board::tile_id_assigner::IDAssignment::SimpleStateful,
+            Some(random_seed),
+        );
+        twothousand_forty_eight::add_random_to_board(&mut board);
+        twothousand_forty_eight::add_random_to_board(&mut board);
         Self {
             board,
-            random_seed,
             score: 0,
             move_count: 0,
             high_score: 0,
             game_over: false,
+            error: String::new(),
         }
     }
 }
@@ -120,17 +125,20 @@ fn move_to_direction(
     direction: twothousand_forty_eight::direction::Direction,
 ) {
     let result = twothousand_forty_eight::board::check_move(gamestate.board, direction);
-    if result.possible {
-        gamestate.board = result.board;
-        gamestate.score += result.score_gain;
-        gamestate.high_score = gamestate.high_score.max(gamestate.score);
-        gamestate.game_over = false;
+    match result {
+        Ok(result) => {
+            gamestate.error = String::new();
+            gamestate.board = result.board;
+            gamestate.score += result.score_gain;
+            gamestate.high_score = gamestate.high_score.max(gamestate.score);
+            gamestate.game_over = false;
 
-        twothousand_forty_eight::add_random_to_board(
-            &mut gamestate.board,
-            Some(gamestate.random_seed + gamestate.move_count),
-        );
-        gamestate.move_count += 1;
+            twothousand_forty_eight::add_random_to_board(&mut gamestate.board);
+            gamestate.move_count += 1;
+        }
+        Err(e) => {
+            gamestate.error = format!("{:?}", e);
+        }
     }
 }
 
@@ -146,6 +154,7 @@ fn render_app(frame: &mut ratatui::Frame<CrosstermBackend<Stdout>>, gamestate: &
                 Constraint::Length(1),
                 Constraint::Length(1),
                 Constraint::Length(1),
+                Constraint::Length(1),
                 Constraint::Max(4 + 2),
                 Constraint::Min(1),
             ]
@@ -155,7 +164,7 @@ fn render_app(frame: &mut ratatui::Frame<CrosstermBackend<Stdout>>, gamestate: &
     let boardchunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Max(23), Constraint::Min(1)].as_ref())
-        .split(chunks[4]);
+        .split(chunks[5]);
 
     let title = Paragraph::new("2048")
         .style(ratatui::style::Style::default().fg(ratatui::style::Color::Yellow));
@@ -165,10 +174,12 @@ fn render_app(frame: &mut ratatui::Frame<CrosstermBackend<Stdout>>, gamestate: &
     let high_score = Paragraph::new(format!("High Score: {}", gamestate.high_score));
     frame.render_widget(high_score, chunks[2]);
     let seed = Paragraph::new(format!(
-        "Seed: {} + {}",
-        gamestate.random_seed, gamestate.move_count
+        "Seed: {:?}, {}",
+        gamestate.board.id_assignment_strategy, gamestate.board.rng_state
     ));
     frame.render_widget(seed, chunks[3]);
+    let error = Paragraph::new(format!("{}", gamestate.error));
+    frame.render_widget(error, chunks[4]);
     let board = Table::new(gamestate.board.tiles.iter().map(|row| {
         Row::new(
             row.iter()
@@ -199,7 +210,31 @@ fn render_app(frame: &mut ratatui::Frame<CrosstermBackend<Stdout>>, gamestate: &
         Constraint::Length(4),
         Constraint::Length(4),
     ]);
+    let idboard = Table::new(gamestate.board.tiles.iter().map(|row| {
+        Row::new(
+            row.iter()
+                .map(|tile| match tile {
+                    Some(tile) => Cell::from(format!("{}", tile.id)).style(get_tile_style(tile)),
+                    None => Cell::from("?"),
+                })
+                .collect::<Vec<Cell>>(),
+        )
+    }))
+    .column_spacing(1)
+    .block(
+        Block::default()
+            .border_type(ratatui::widgets::BorderType::Rounded)
+            .borders(Borders::all())
+            .padding(ratatui::widgets::Padding::horizontal(1)),
+    )
+    .widths(&[
+        Constraint::Length(20),
+        Constraint::Length(20),
+        Constraint::Length(20),
+        Constraint::Length(20),
+    ]);
     frame.render_widget(board, boardchunks[0]);
+    frame.render_widget(idboard, boardchunks[1]);
 }
 
 fn get_tile_style(tile: &twothousand_forty_eight::board::tile::Tile) -> ratatui::style::Style {

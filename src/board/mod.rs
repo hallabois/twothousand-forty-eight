@@ -8,7 +8,7 @@ use crate::direction::Direction;
 use serde::{Deserialize, Serialize};
 use tile::Tile;
 
-use self::tile_id_assigner::{IDAssignment, TileIDAssigner};
+use self::{tile::InitialID, tile_id_assigner::IDAssignment};
 
 /// Max width of a board the program can handle. Be careful when increasing, as this increases memory use expotentially.
 pub const MAX_WIDTH: usize = 5;
@@ -31,16 +31,26 @@ pub struct Board {
 
     /// How ids are assigned to the tiles on the board
     pub id_assignment_strategy: IDAssignment,
+
+    /// State of the random number generator
+    pub rng_state: usize,
 }
 
 impl Board {
     /// Create a new board with a [width] and [height] and initialize all tiles
-    pub fn new(width: usize, height: usize, id_assignment: IDAssignment) -> Board {
+    pub fn new(
+        width: usize,
+        height: usize,
+        id_assignment: IDAssignment,
+        seed: Option<usize>,
+    ) -> Board {
+        let mut rng_state = seed.unwrap_or(1);
         Board {
             width,
             height,
-            tiles: initialize_tiles(width, height, id_assignment),
+            tiles: initialize_tiles(width, height, id_assignment, &mut rng_state),
             id_assignment_strategy: id_assignment,
+            rng_state,
         }
     }
 
@@ -51,7 +61,7 @@ impl Board {
                 x,
                 y,
                 val,
-                tile::InitialID::Strategy(self.id_assignment_strategy),
+                tile::InitialID::Strategy(self.id_assignment_strategy, &mut self.rng_state),
             ));
         }
     }
@@ -111,13 +121,14 @@ impl Board {
     }
 
     /// Move the board in the direction "dir" and return the score gained from the move
-    pub fn move_in_direction(&mut self, dir: Direction) -> Result<usize, ()> {
+    pub fn move_in_direction(&mut self, dir: Direction) -> Result<usize, MoveError> {
         let result = check_move(*self, dir);
-        if result.possible {
-            *self = result.board;
-            Ok(result.score_gain)
-        } else {
-            Err(())
+        match result {
+            Ok(data) => {
+                *self = data.board;
+                Ok(data.score_gain)
+            }
+            Err(e) => Err(e),
         }
     }
 }
@@ -125,7 +136,7 @@ impl Board {
 /// Initialize a new 4x4 board with [Board::new]
 impl Default for Board {
     fn default() -> Board {
-        Board::new(4, 4, IDAssignment::default())
+        Board::new(4, 4, IDAssignment::default(), None)
     }
 }
 
@@ -137,7 +148,8 @@ impl From<Tiles> for Board {
             width,
             height,
             tiles,
-            id_assignment_strategy: IDAssignment::Simple,
+            id_assignment_strategy: IDAssignment::default(),
+            rng_state: 0,
         }
     }
 }
@@ -169,6 +181,7 @@ pub fn initialize_tiles(
     width: usize,
     height: usize,
     id_assignement_strategy: IDAssignment,
+    rng_state: &mut usize,
 ) -> Tiles {
     if width > MAX_WIDTH || height > MAX_HEIGHT {
         panic!("Board size too big! This version of the program has been compiled to support the maximum size of {:?}", (MAX_WIDTH, MAX_HEIGHT));
@@ -176,7 +189,12 @@ pub fn initialize_tiles(
     let mut tiles: Tiles = [[None; MAX_WIDTH]; MAX_HEIGHT];
     for x in 0..width {
         for y in 0..height {
-            tiles[y][x] = Some(Tile::new(x, y, 0, id_assignement_strategy.into()));
+            tiles[y][x] = Some(Tile::new(
+                x,
+                y,
+                0,
+                tile::InitialID::Strategy(id_assignement_strategy, rng_state),
+            ));
         }
     }
     tiles
@@ -297,39 +315,38 @@ pub fn get_farthest_tile(
 const MAX_MOVE_CHECKS: usize = 256;
 #[derive(Serialize, Deserialize)]
 pub struct MoveResult {
-    pub possible: bool,
     pub board: Board,
     pub score_gain: usize,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub enum MoveError {
+    NoValidMovesLeft,
+    HasNoEffect,
+}
+
 /// Check if a move is possible in the direction "dir"
-pub fn check_move(board: Board, dir: Direction) -> MoveResult {
+pub fn check_move(board: Board, dir: Direction) -> Result<MoveResult, MoveError> {
     // Copy the board so we don't modify the original, necessary for preserving the random state
-    let mut board = board.clone();
+    let mut board = board;
     if dir == Direction::END {
-        return MoveResult {
-            possible: true,
+        return Ok(MoveResult {
             board,
             score_gain: 0,
-        };
+        });
     }
     if !has_possible_moves(board) {
-        return MoveResult {
-            possible: false,
-            board,
-            score_gain: 0,
-        };
+        return Err(MoveError::NoValidMovesLeft);
     }
 
     let mut was_changed = false;
 
     // Copy the current board and unset merged_from
-    let mut tiles = board.tiles;
     for t in board.get_occupied_tiles() {
-        tiles[t.y][t.x] = Some(Tile {
+        board.tiles[t.y][t.x] = Some(Tile {
             merged_from: None,
             ..t
-        })
+        });
     }
 
     let mut score = 0;
@@ -337,13 +354,7 @@ pub fn check_move(board: Board, dir: Direction) -> MoveResult {
     // Merge
     let mut ids_checked_for_merge: Vec<usize> = vec![];
     for _ in 0..MAX_MOVE_CHECKS {
-        let b = Board {
-            tiles,
-            height: board.height,
-            width: board.width,
-            id_assignment_strategy: board.id_assignment_strategy,
-        };
-        let occupied_tiles = b.get_occupied_tiles();
+        let occupied_tiles = board.get_occupied_tiles();
         let viable_tiles: Vec<Tile> = occupied_tiles
             .iter()
             .filter(|t| t.merged_from.is_none())
@@ -353,26 +364,25 @@ pub fn check_move(board: Board, dir: Direction) -> MoveResult {
             .iter()
             .find(|t| !ids_checked_for_merge.contains(&t.id))
         {
-            let closest_opt = get_closest_tile(*t, &occupied_tiles, dir, Some(t.value));
-            if let Some(closest) = closest_opt {
+            if let Some(closest) = get_closest_tile(*t, &occupied_tiles, dir, Some(t.value)) {
                 if t.value == closest.value && closest.merged_from.is_none() {
-                    tiles[t.y][t.x] = Some(Tile::new(
+                    board.tiles[t.y][t.x] = Some(Tile::new(
                         t.x,
                         t.y,
                         0,
-                        tile::InitialID::Strategy(board.id_assignment_strategy),
+                        InitialID::Strategy(board.id_assignment_strategy, &mut board.rng_state),
                     ));
 
-                    let merged: Tile = Tile {
-                        x: closest.x,
-                        y: closest.y,
-                        value: closest.value * 2,
-                        merged_from: Some([t.id, closest.id]),
-                        ..Default::default()
-                    };
+                    let mut merged = Tile::new(
+                        closest.x,
+                        closest.y,
+                        closest.value * 2,
+                        InitialID::Strategy(board.id_assignment_strategy, &mut board.rng_state),
+                    );
+                    merged.merged_from = Some([t.id, closest.id]);
 
                     score += merged.value;
-                    tiles[closest.y][closest.x] = Some(merged);
+                    board.tiles[closest.y][closest.x] = Some(merged);
                     was_changed = true;
                 }
             }
@@ -385,16 +395,10 @@ pub fn check_move(board: Board, dir: Direction) -> MoveResult {
     // Slide
     let mut moved_tiles: Vec<usize> = vec![];
     for _ in 0..MAX_MOVE_CHECKS {
-        let b = Board {
-            tiles,
-            width: board.width,
-            height: board.height,
-            id_assignment_strategy: board.id_assignment_strategy,
-        };
-        let tiles_post = b.get_occupied_tiles();
+        let tiles_post = board.get_occupied_tiles();
 
         if let Some(t) = tiles_post.iter().find(|t| !moved_tiles.contains(&t.id)) {
-            let all_tiles = b.get_all_tiles();
+            let all_tiles = board.get_all_tiles();
             let dir_to_use = dir;
             let farthest_free_opt = get_farthest_tile(*t, &all_tiles, dir_to_use, Some(0));
 
@@ -405,13 +409,13 @@ pub fn check_move(board: Board, dir: Direction) -> MoveResult {
                     ..*t
                 };
 
-                tiles[t.y][t.x] = Some(Tile::new(
+                board.tiles[t.y][t.x] = Some(Tile::new(
                     t.x,
                     t.y,
                     0,
-                    tile::InitialID::Strategy(board.id_assignment_strategy),
+                    tile::InitialID::Strategy(board.id_assignment_strategy, &mut board.rng_state),
                 ));
-                tiles[farthest_free.y][farthest_free.x] = Some(new_tile);
+                board.tiles[farthest_free.y][farthest_free.x] = Some(new_tile);
 
                 was_changed = true;
                 moved_tiles = vec![];
@@ -423,12 +427,13 @@ pub fn check_move(board: Board, dir: Direction) -> MoveResult {
         }
     }
 
-    board.tiles = tiles;
-    MoveResult {
-        possible: was_changed,
+    if !was_changed {
+        return Err(MoveError::HasNoEffect);
+    }
+    Ok(MoveResult {
         board,
         score_gain: score,
-    }
+    })
 }
 
 /// Check if a move in any direction is possible

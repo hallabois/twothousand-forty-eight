@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 // https://en.wikipedia.org/wiki/Linear_congruential_generator
 pub fn linear_congruential_generator(m: usize, a: usize, c: usize, seed: usize) -> usize {
-    assert_ne!(seed, 0, "A seed of 0 will always return 0");
+    let seed = seed + 1; // Prevent misuse
     (a * seed + c) % m
 }
 

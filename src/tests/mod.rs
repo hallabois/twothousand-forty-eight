@@ -2,16 +2,13 @@ pub mod lib_testgames;
 
 #[cfg(test)]
 mod board {
-    use crate::board::{
-        self, has_possible_moves,
-        tile_id_assigner::{IDAssignment, TileIDAssigner},
-    };
+    use crate::board::{self, has_possible_moves, tile_id_assigner::IDAssignment};
     use board::Board;
     #[test]
     fn creation_works() {
         for w in 0..board::MAX_WIDTH {
             for h in 0..board::MAX_HEIGHT {
-                let mut board = Board::new(w, h, None.into());
+                let mut board = Board::new(w, h, IDAssignment::default(), None);
 
                 let mut index = 0;
                 for x in 0..w {
@@ -54,13 +51,13 @@ mod board {
 
     #[test]
     fn get_id_sum() {
-        let id_strategy = IDAssignment::SimpleControlled(TileIDAssigner::new(1));
-        let mut board = Board::new(4, 4, id_strategy);
+        let id_strategy = IDAssignment::SimpleStateful;
+        let mut board = Board::new(4, 4, id_strategy, Some(1));
         board.set_tile(0, 0, 2);
         board.set_tile(0, 1, 4);
         board.set_tile(3, 1, 2);
         let sum = board.get_id_sum();
-        assert_eq!(sum, 136);
+        assert_eq!(sum, 173);
     }
 }
 
@@ -90,7 +87,8 @@ mod parser {
     }
 
     #[test]
-    #[ignore]
+    #[ignore = "slow"]
+    /// Test about 10 000 games gathered from players
     fn works_all_real() {
         use lib_testgames::GAMELIST;
         let games: Vec<&str> = GAMELIST.split("\n").collect();
@@ -224,7 +222,8 @@ mod validator {
     }
 
     #[test]
-    #[ignore]
+    #[ignore = "slow"]
+    /// Test about 10 000 games gathered from players
     fn works_all_real() {
         use lib_testgames::GAMELIST;
         let games: Vec<&str> = GAMELIST.split("\n").collect();
@@ -242,24 +241,21 @@ mod validator {
 #[cfg(test)]
 mod serializers {
     use crate::board::tile::Tile;
-    use regex::Regex;
 
     #[test]
     fn tile_serializer_null() {
-        let t = Tile::new(0, 0, 0, None.into());
+        let t = Tile::new(0, 0, 0, 0.into());
         assert_eq!(t.to_json(), "null");
     }
 
     #[test]
     fn tile_serializer_some() {
-        let t = Tile::new(0, 1, 4, None.into());
+        let t = Tile::new(0, 1, 4, 0.into());
 
-        let re = Regex::new("\\{\"x\":0,\"y\":1,\"value\":4,\"id\":[0-9]+,\"merged_from\":null\\}")
-            .unwrap();
-
-        println!("Matching against: {}", t.to_json());
-
-        assert!(re.is_match(&t.to_json()));
+        assert_eq!(
+            t.to_json(),
+            "{\"x\":0,\"y\":1,\"value\":4,\"id\":0,\"merged_from\":null}"
+        );
     }
 }
 
@@ -297,10 +293,8 @@ mod tile_merged_from {
 
         let MoveResult {
             board,
-            possible,
             score_gain: _,
-        } = board::check_move(game, crate::direction::Direction::LEFT);
-        //assert!(possible);
+        } = board::check_move(game, crate::direction::Direction::LEFT).unwrap();
 
         println!("Board on next move:");
         println!("{}", board);
@@ -315,10 +309,8 @@ mod tile_merged_from {
         game = board;
         let MoveResult {
             board,
-            possible,
             score_gain: _,
-        } = board::check_move(game, crate::direction::Direction::RIGHT);
-        assert!(possible);
+        } = board::check_move(game, crate::direction::Direction::RIGHT).unwrap();
 
         println!("Board on next move:");
         println!("{}", board);

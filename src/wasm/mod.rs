@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
 use crate::{board::Board, *};
@@ -48,43 +49,26 @@ pub fn validate_all_frames(data: &str) -> String {
     serde_json::to_string(&validation_results).unwrap()
 }
 
-#[wasm_bindgen]
-pub fn apply_move(board_data: &str, dir: usize, add_random: bool) -> String {
-    apply_move_with_seed(board_data, dir, add_random, None)
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct WasmMoveResult {
+    board: Board,
+    score_gain: usize,
 }
 
 #[wasm_bindgen]
-pub fn apply_move_with_seed(
-    board_data: &str,
-    dir: usize,
-    add_random: bool,
-    seed: Option<usize>,
-) -> String {
-    let mut b: Board = serde_json::from_str(board_data).unwrap();
-    b.id_assignment_strategy = seed.into();
-    // let first_move_valid = validator::validate_first_move(&parsed);
-    let mut result = board::check_move(b, direction::Direction::from_index(dir));
-    if add_random {
-        crate::add_random_to_board(&mut result.board, seed);
+pub fn apply_move(board_data: &str, dir: usize, add_random: bool) -> String {
+    let mut board: Board = serde_json::from_str(board_data).unwrap();
+    let result = board.move_in_direction(direction::Direction::from_index(dir));
+    if result.is_ok() && add_random {
+        crate::add_random_to_board(&mut board);
     }
-    serde_json::to_string(&result).unwrap()
+    serde_json::to_string(&result.map(|score_gain| WasmMoveResult { board, score_gain })).unwrap()
 }
 
 #[wasm_bindgen]
 pub fn add_random(board_data: &str) -> String {
-    add_random_with_seed(board_data, None)
-}
-
-#[wasm_bindgen]
-pub fn add_random_with_seed(board_data: &str, seed: Option<usize>) -> String {
-    let b: board::Board = serde_json::from_str(board_data).unwrap();
-    let mut game = board::Board {
-        width: b.width,
-        height: b.height,
-        tiles: b.tiles,
-        id_assignment_strategy: seed.into(),
-    };
-    add_random_to_board(&mut game, seed);
+    let mut game: Board = serde_json::from_str(board_data).unwrap();
+    add_random_to_board(&mut game);
     serde_json::to_string(&game.tiles).unwrap()
 }
 
@@ -103,7 +87,7 @@ mod tests {
 
     // This test is quite slow (a lot of json parsing)
     #[test]
-    #[ignore]
+    #[ignore = "slow"]
     fn validate_all_frames() {
         let validation_result = wasm_validate_all_frames(lib_testgames::GAME3X3);
         let parsed: Vec<Option<Result<validator::ValidationData, validator::ValidationError>>> =

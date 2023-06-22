@@ -80,22 +80,24 @@ pub fn reconstruct_history(history: Recording) -> Result<HistoryReconstruction, 
         let dir = i.1;
         let addition = history.history[ind].2;
 
-        let predicted = check_move(
-            Board {
-                tiles: if ind > 0 {
-                    history_out[ind].tiles
-                } else {
-                    board
-                },
-                width: history.width,
-                height: history.height,
-                ..Default::default()
-            },
-            dir,
-        );
-        let mut predicted_board = predicted.board.tiles;
-        score += predicted.score_gain;
-        max_score = usize::max(score, max_score);
+        let tiles = if ind > 0 {
+            history_out[ind].tiles
+        } else {
+            board
+        };
+        let board_to_check = Board {
+            tiles,
+            width: history.width,
+            height: history.height,
+            ..Default::default()
+        };
+        let predicted = check_move(board_to_check, dir);
+        let mut predicted_board = tiles;
+        if let Ok(data) = predicted {
+            predicted_board = data.board.tiles;
+            score += data.score_gain;
+            max_score = usize::max(score, max_score);
+        }
 
         if ind < (history_len - 1) && ind < MAX_HISTORY_LENGTH {
             let board_next = history.history[ind + 1].0;
@@ -183,7 +185,9 @@ pub fn reconstruct_history(history: Recording) -> Result<HistoryReconstruction, 
                     },
                     dir,
                 );
-                score_margin = score_margin.max(predicted.score_gain);
+                if let Ok(data) = predicted {
+                    score_margin = score_margin.max(data.score_gain);
+                }
             }
         }
     }
@@ -234,15 +238,23 @@ pub fn get_run_score(history: &Recording) -> usize {
             },
             dir,
         );
-        score += predicted.score_gain;
+        if let Ok(data) = predicted {
+            score += data.score_gain;
+        }
+        // should we return the intermediate score if a move is invalid?
     }
     score
 }
 
 pub fn initialize_board(width: usize, height: usize, seed: usize, add_tiles: usize) -> Board {
-    let mut board = Board::new(width, height, Some(seed).into());
+    let mut board = Board::new(
+        width,
+        height,
+        crate::board::tile_id_assigner::IDAssignment::default(),
+        Some(seed),
+    );
     for _ in 0..add_tiles {
-        crate::add_random_to_board(&mut board, Some(seed));
+        crate::add_random_to_board(&mut board);
     }
 
     board
@@ -269,15 +281,14 @@ pub fn replay_moves(input: ParseDataV2) -> Result<HistoryReconstruction, MoveRep
     let break_positions = [None; MAX_ALLOWED_BREAKS];
 
     for (move_index, mv) in input.moves.into_iter().enumerate() {
-        let mvchk = check_move(board, mv);
+        let mvchk =
+            check_move(board, mv).map_err(|_| MoveReplayError::InvalidMove(mv, move_index))?;
 
         board = mvchk.board;
         score += mvchk.score_gain;
         max_score = usize::max(score, max_score);
 
-        if mvchk.possible {
-            add_random_to_board(&mut board, Some(input.seed + move_index));
-        }
+        add_random_to_board(&mut board);
 
         history_out.push(board);
     }
