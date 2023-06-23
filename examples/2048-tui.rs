@@ -12,7 +12,7 @@ use ratatui::{
 };
 use std::io::{self, Stdout};
 
-use twothousand_forty_eight::board::Board;
+use twothousand_forty_eight::{board::Board, recording::SeededRecording};
 struct GameState {
     board: Board,
     move_count: usize,
@@ -20,6 +20,7 @@ struct GameState {
     high_score: usize,
     game_over: bool,
     error: String,
+    history: SeededRecording,
 }
 impl Default for GameState {
     fn default() -> Self {
@@ -39,6 +40,7 @@ impl Default for GameState {
             high_score: 0,
             game_over: false,
             error: String::new(),
+            history: SeededRecording::new(1, random_seed, 4, 4, vec![]),
         }
     }
 }
@@ -135,6 +137,11 @@ fn move_to_direction(
 
             twothousand_forty_eight::add_random_to_board(&mut gamestate.board);
             gamestate.move_count += 1;
+
+            gamestate.history.moves.push(direction);
+            let history_string: String = (&gamestate.history).into();
+            let history: SeededRecording = (history_string.as_str()).try_into().unwrap();
+            assert_eq!(history, gamestate.history);
         }
         Err(e) => {
             gamestate.error = format!("{:?}", e);
@@ -155,6 +162,7 @@ fn render_app(frame: &mut ratatui::Frame<CrosstermBackend<Stdout>>, gamestate: &
                 Constraint::Length(1),
                 Constraint::Length(1),
                 Constraint::Length(1),
+                Constraint::Length(1),
                 Constraint::Max(4 + 2),
                 Constraint::Min(1),
             ]
@@ -164,7 +172,7 @@ fn render_app(frame: &mut ratatui::Frame<CrosstermBackend<Stdout>>, gamestate: &
     let boardchunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Max(23), Constraint::Min(1)].as_ref())
-        .split(chunks[5]);
+        .split(chunks[6]);
 
     let title = Paragraph::new("2048")
         .style(ratatui::style::Style::default().fg(ratatui::style::Color::Yellow));
@@ -178,8 +186,10 @@ fn render_app(frame: &mut ratatui::Frame<CrosstermBackend<Stdout>>, gamestate: &
         gamestate.board.id_assignment_strategy, gamestate.board.rng_state
     ));
     frame.render_widget(seed, chunks[3]);
+    let history = Paragraph::new(format!("{}", String::from(&gamestate.history)));
+    frame.render_widget(history, chunks[4]);
     let error = Paragraph::new(format!("{}", gamestate.error));
-    frame.render_widget(error, chunks[4]);
+    frame.render_widget(error, chunks[5]);
     let board = Table::new(gamestate.board.tiles.iter().map(|row| {
         Row::new(
             row.iter()

@@ -1,7 +1,7 @@
 //! Provides [Recording], to hold recorded games
 
-use crate::board::tile::Tile;
 use crate::board::Tiles;
+use crate::board::{tile::Tile, MoveError};
 use crate::direction::Direction;
 
 use serde::{Deserialize, Serialize};
@@ -75,6 +75,8 @@ impl std::fmt::Display for Recording {
     }
 }
 
+/// Represents a seeded recording of a played game of 2048. Unlike [Recording] a [SeededRecording] can be parsed by just using tryfrom.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SeededRecording {
     pub version: u8,
     pub seed: usize,
@@ -84,11 +86,142 @@ pub struct SeededRecording {
 }
 
 impl SeededRecording {
+    pub fn new(version: u8, seed: usize, width: u8, height: u8, moves: Vec<Direction>) -> Self {
+        Self {
+            version,
+            seed,
+            width,
+            height,
+            moves,
+        }
+    }
+}
+
+use thiserror::Error;
+#[derive(Error, Debug, Clone, Serialize, Deserialize)]
+pub enum SeededRecordingParseError {
+    #[error("missing version information")]
+    MissingVersion,
+    #[error("invalid version information")]
+    InvalidVersion,
+    #[error("missing seed")]
+    MissingSeed,
+    #[error("invalid seed")]
+    InvalidSeed,
+    #[error("missing width")]
+    MissingWidth,
+    #[error("invalid width")]
+    InvalidWidth,
+    #[error("missing height")]
+    MissingHeight,
+    #[error("invalid height")]
+    InvalidHeight,
+    #[error("missing moves")]
+    MissingMoves,
+    #[error("invalid move")]
+    InvalidMove,
+}
+
+/// Converts a string to a [SeededRecording].
+/// Schema:
+///    [version]:[seed]:[width]:[height]:[moves]
+/// where [moves] is a base64 encoded string of the moves, each move is represented by a single byte with 5 possible states:
+/// 0: Up
+/// 1: Down
+/// 2: Left
+/// 3: Right
+/// 4: None / End / Padding
+impl TryFrom<&str> for SeededRecording {
+    type Error = SeededRecordingParseError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let mut split = value.split(":");
+        let version = split
+            .next()
+            .ok_or(SeededRecordingParseError::MissingVersion)?
+            .parse::<u8>()
+            .map_err(|_| SeededRecordingParseError::InvalidVersion)?;
+        let seed = split
+            .next()
+            .ok_or(SeededRecordingParseError::MissingSeed)?
+            .parse::<usize>()
+            .map_err(|_| SeededRecordingParseError::InvalidSeed)?;
+        let width = split
+            .next()
+            .ok_or(SeededRecordingParseError::MissingWidth)?
+            .parse::<u8>()
+            .map_err(|_| SeededRecordingParseError::InvalidWidth)?;
+        let height = split
+            .next()
+            .ok_or(SeededRecordingParseError::MissingHeight)?
+            .parse::<u8>()
+            .map_err(|_| SeededRecordingParseError::InvalidHeight)?;
+        let moves = split
+            .next()
+            .ok_or(SeededRecordingParseError::MissingMoves)?;
+        let mut base = convert_base::Convert::new(64, 6);
+        let coded = base64::decode(moves).map_err(|_| SeededRecordingParseError::InvalidMove)?;
+        let moves = base.convert::<u8, u8>(&coded);
+        let moves = moves
+            .iter()
+            .map(|dir| match dir {
+                1 => Direction::UP,
+                2 => Direction::RIGHT,
+                3 => Direction::DOWN,
+                4 => Direction::LEFT,
+                5 => Direction::BREAK,
+                _ => Direction::END,
+            })
+            .collect::<Vec<Direction>>();
+
+        Ok(Self {
+            version,
+            seed,
+            width,
+            height,
+            moves,
+        })
+    }
+}
+
+impl From<&SeededRecording> for String {
+    fn from(recording: &SeededRecording) -> Self {
+        let mut out = String::new();
+        out += recording.version.to_string().as_str();
+        out += ":";
+        out += recording.seed.to_string().as_str();
+        out += ":";
+        out += recording.width.to_string().as_str();
+        out += ":";
+        out += recording.height.to_string().as_str();
+        out += ":";
+        let mut base = convert_base::Convert::new(6, 64);
+        let input: Vec<u8> = recording
+            .moves
+            .iter()
+            .map(|dir| match dir {
+                Direction::UP => 1,
+                Direction::RIGHT => 2,
+                Direction::DOWN => 3,
+                Direction::LEFT => 4,
+                Direction::BREAK => 5,
+                Direction::END => 0,
+                Direction::START => 0,
+            })
+            .collect();
+        let z = base.convert::<u8, u8>(&input);
+        let moves = base64::encode(z);
+        out += moves.as_str();
+        out
+    }
+}
+
+impl SeededRecording {
     pub fn get_board_at_move(
         &self,
         move_index: usize,
         id_assignment: crate::board::tile_id_assigner::IDAssignment,
-    ) -> Result<crate::board::Board, ()> {
+    ) -> Result<crate::board::Board, MoveError> {
         let mut board = crate::board::Board::new(
             self.width as usize,
             self.height as usize,
@@ -96,7 +229,7 @@ impl SeededRecording {
             Some(self.seed),
         );
         for i in 0..=move_index {
-            board.move_in_direction(self.moves[i]).map_err(|_| ())?;
+            board.move_in_direction(self.moves[i])?;
         }
         Ok(board)
     }

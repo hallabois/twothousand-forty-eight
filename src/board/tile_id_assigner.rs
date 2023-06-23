@@ -10,7 +10,7 @@ pub enum IDAssignment {
 
 impl Default for IDAssignment {
     fn default() -> Self {
-        Self::SimpleStateful
+        Self::Simple
     }
 }
 

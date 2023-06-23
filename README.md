@@ -22,4 +22,4 @@ Run `cargo build --release` to build
 
 ### Publishing
 
-Run the provided publish.sh to publish the package to crates.io and the wasm bindings to npm
+Run the provided publish.sh to publish the package to crates.io and the wasm bindings to npm. You need to have wasm-pack installed in order to build the npm package.
