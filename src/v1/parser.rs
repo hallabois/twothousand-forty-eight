@@ -1,11 +1,8 @@
 use crate::board;
 use crate::board::initialize_tiles;
-use crate::board::tile_id_assigner::IDAssignment;
 use crate::direction::Direction;
-use crate::random::RandAlgo;
-use crate::recording::History;
-use crate::recording::Recording;
-use crate::validator::MAX_ALLOWED_BREAKS;
+use crate::v1::recording::History;
+use crate::v1::recording::Recording;
 
 use serde::Deserialize;
 use serde::Serialize;
@@ -94,7 +91,7 @@ pub fn parse_data(data: &str) -> Result<Recording, ParseError> {
         let b = *bdata
             .first()
             .ok_or(ParseError::MissingBoard(history_index))?;
-        let mut tiles = initialize_tiles(width, height, IDAssignment::default(), &mut 0);
+        let mut tiles = initialize_tiles(width, height, &mut rng_state);
         let dir = parts
             .get(1)
             .ok_or(ParseError::MissingDirection(history_index))?;
@@ -109,7 +106,7 @@ pub fn parse_data(data: &str) -> Result<Recording, ParseError> {
                 x,
                 y,
                 val,
-                board::tile::InitialID::Strategy(IDAssignment::default(), &mut rng_state),
+                board::tile::InitialID::AutoAssign(&mut rng_state),
             ));
         }
 
@@ -139,7 +136,7 @@ pub fn parse_data(data: &str) -> Result<Recording, ParseError> {
                 added_x,
                 added_y,
                 added_value,
-                board::tile::InitialID::Strategy(IDAssignment::default(), &mut rng_state),
+                board::tile::InitialID::AutoAssign(&mut rng_state),
             ));
         }
 
@@ -150,151 +147,4 @@ pub fn parse_data(data: &str) -> Result<Recording, ParseError> {
         width,
         height,
     })
-}
-
-fn default_size() -> usize {
-    4
-}
-
-fn default_rng() -> RandAlgo {
-    RandAlgo::LCG
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ParseDataV2 {
-    #[serde(alias = "s")]
-    pub seed: usize,
-    #[serde(alias = "r", default = "default_rng")]
-    pub rand: RandAlgo,
-    #[serde(alias = "w", default = "default_size")]
-    pub width: usize,
-    #[serde(alias = "h", default = "default_size")]
-    pub height: usize,
-    #[serde(alias = "m")]
-    pub moves: Vec<Direction>,
-}
-
-#[derive(Error, Debug, Serialize, Deserialize)]
-pub enum ParseErrorV2 {
-    #[error("the string should start with the character \"|\"")]
-    MissingMagicMarker,
-    #[error("missing seed")]
-    MissingSeed,
-    #[error("missing width")]
-    MissingWidth,
-    #[error("missing height")]
-    MissingHeight,
-    #[error("missing moves")]
-    MissingMoves,
-
-    #[error("invalid seed")]
-    InvalidSeed,
-    #[error("invalid width")]
-    InvalidWidth,
-    #[error("invalid height")]
-    InvalidHeight,
-
-    #[error("unsupported width: {0}")]
-    UnsupportedWidth(usize),
-    #[error("unsupported height: {0}")]
-    UnsupportedHeight(usize),
-    #[error("invalid seed: {0}")]
-    UnfitSeed(usize),
-    #[error("run contains too many breaks: {0} found, {1} allowed")]
-    TooManyBreaks(usize, usize),
-}
-
-pub fn parse_v2(raw: String) -> Result<ParseDataV2, ParseErrorV2> {
-    let split_char = "|";
-    let mut split = raw.split(split_char);
-    if split.next().is_none() {
-        return Err(ParseErrorV2::MissingMagicMarker);
-    }
-    if split.next().is_none() {
-        return Err(ParseErrorV2::MissingMagicMarker);
-    }
-    let seed = split
-        .next()
-        .ok_or(ParseErrorV2::MissingSeed)?
-        .parse::<usize>()
-        .map_err(|_| ParseErrorV2::InvalidSeed)?;
-    let width = split
-        .next()
-        .ok_or(ParseErrorV2::MissingWidth)?
-        .parse::<usize>()
-        .map_err(|_| ParseErrorV2::InvalidWidth)?;
-    let height = split
-        .next()
-        .ok_or(ParseErrorV2::MissingHeight)?
-        .parse::<usize>()
-        .map_err(|_| ParseErrorV2::InvalidHeight)?;
-    let moves_str = split.next().ok_or(ParseErrorV2::MissingMoves)?;
-    let mut moves = vec![];
-    for m_c in moves_str.chars() {
-        let m = m_c.to_string();
-        let dir = Direction::from_index_str(&m);
-        moves.push(dir);
-    }
-
-    let data = ParseDataV2 {
-        seed,
-        width,
-        height,
-        moves,
-        rand: default_rng(),
-    };
-
-    if data.seed == 0 {
-        return Err(ParseErrorV2::UnfitSeed(data.seed));
-    }
-    if data.width > board::MAX_WIDTH {
-        return Err(ParseErrorV2::UnsupportedWidth(data.width));
-    }
-    if data.height > board::MAX_HEIGHT {
-        return Err(ParseErrorV2::UnsupportedHeight(data.height));
-    }
-
-    let break_count = data
-        .moves
-        .iter()
-        .filter(|m| **m == Direction::BREAK)
-        .count();
-    if break_count > MAX_ALLOWED_BREAKS {
-        return Err(ParseErrorV2::TooManyBreaks(break_count, MAX_ALLOWED_BREAKS));
-    }
-
-    Ok(data)
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn parse_v2() {
-        let d = super::parse_v2(String::from(r#"||12|4|4|00100"#)).unwrap();
-        println!("{:?}", d);
-    }
-
-    #[test]
-    #[should_panic]
-    fn parse_v2_invalid_seed() {
-        super::parse_v2(String::from(r#"||0|4|4|00100"#)).unwrap();
-    }
-
-    #[test]
-    #[should_panic]
-    fn parse_v2_invalid_width() {
-        super::parse_v2(String::from(r#"||12|12000220|4|00100"#)).unwrap();
-    }
-
-    #[test]
-    #[should_panic]
-    fn parse_v2_invalid_height() {
-        super::parse_v2(String::from(r#"||12|4|999838|00100"#)).unwrap();
-    }
-
-    #[test]
-    #[should_panic]
-    fn parse_v2_toomanybreaks() {
-        super::parse_v2(String::from(r#"||13|4|4|001b12b033b399b"#)).unwrap();
-    }
 }

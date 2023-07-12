@@ -15,13 +15,13 @@ documentation = "https://docs.rs/twothousand_forty_eight"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-sha2 = {version = "0.9.8", optional = true}
+sha2 = {version = "0.9.8"}
 wasm-bindgen = {version = "0.2.78", optional = true}
 serde = {version = "1.0", features = ["derive"]}
 serde_json = {version = "1.0"}
 thiserror = "1.0"
-base64 = "0.21.2"
-convert-base = "1.1.2"
+base64 = {version = "0.21.2", optional = true}
+convert-base = {version="1.1.2", optional = true}
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] } # Used for benchmarking
@@ -49,8 +49,7 @@ lto = true
 opt-level = 3 # All optimizations
 
 [features]
-default = ["history_hash", "wasm"]
-all = ["history_hash", "wasm"]
-
-history_hash = ["sha2"]
+default = ["all"]
+all = ["v2", "wasm"]
 wasm = ["wasm-bindgen"]
+v2 = ["base64", "convert-base"]

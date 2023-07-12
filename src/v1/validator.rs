@@ -1,13 +1,11 @@
-//! Provides functions to validate a [Recording](crate::recording::Recording)
-use crate::add_random_to_board;
+//! Provides functions to validate a [Recording](crate::v1::recording::Recording)
 use crate::board::check_move;
 use crate::board::tile::Tile;
 use crate::board::Board;
 use crate::direction;
 use crate::direction::Direction;
-use crate::parser::ParseDataV2;
-use crate::recording::Recording;
-
+use crate::rules::ClassicV1;
+use crate::v1::recording::Recording;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -59,16 +57,14 @@ pub fn reconstruct_history(history: Recording) -> Result<HistoryReconstruction, 
     let mut score_margin: usize = 0;
     let mut max_score: usize = 0;
 
+    let mut rng_state = 0;
     let history_len = history.history.len();
     let mut history_out: Vec<Board> = vec![];
     if history_len > 0 {
         // Push the starting position into history, as it is not validated here.
-        history_out.push(Board {
-            height: history.height,
-            width: history.width,
-            tiles: history.history[0].0,
-            ..Default::default()
-        });
+        let board = Board::from((history.history[0].0, rng_state));
+        rng_state = board.rng_state; // Update the rng state
+        history_out.push(board);
     }
 
     let mut breaks: usize = 0;
@@ -85,12 +81,7 @@ pub fn reconstruct_history(history: Recording) -> Result<HistoryReconstruction, 
         } else {
             board
         };
-        let board_to_check = Board {
-            tiles,
-            width: history.width,
-            height: history.height,
-            ..Default::default()
-        };
+        let board_to_check = Board::from((tiles, rng_state));
         let predicted = check_move(board_to_check, dir);
         let mut predicted_board = tiles;
         if let Ok(data) = predicted {
@@ -109,18 +100,8 @@ pub fn reconstruct_history(history: Recording) -> Result<HistoryReconstruction, 
                 predicted_board[add.y][add.x] = Some(add);
             }
 
-            let mut board_predicted = Board {
-                tiles: predicted_board,
-                width: history.width,
-                height: history.height,
-                ..Default::default()
-            };
-            let board_actual = Board {
-                tiles: board_next,
-                width: history.width,
-                height: history.height,
-                ..Default::default()
-            };
+            let mut board_predicted = Board::from((predicted_board, board_to_check.rng_state));
+            let board_actual = Board::from((board_next, board_to_check.rng_state));
             let expected_score = board_predicted.get_total_value();
             let actual_score = board_actual.get_total_value();
 
@@ -128,7 +109,9 @@ pub fn reconstruct_history(history: Recording) -> Result<HistoryReconstruction, 
             let continued_correctly = predicted_board == board_next;
             if ended_correctly || continued_correctly {
                 // Do nothing, the move was valid
-            } else if breaks < 3 && (expected_score > actual_score) && score > 999 {
+            } else if (expected_score > actual_score)
+                && crate::rules::can_break(&ClassicV1, &board_predicted, score, breaks)
+            {
                 // Kurinpalautus / Parinkulautus
                 break_positions[breaks] = Some(ind);
                 breaks += 1;
@@ -154,12 +137,15 @@ pub fn reconstruct_history(history: Recording) -> Result<HistoryReconstruction, 
                 );
                 if ind > 0 {
                     println!("Last board:");
-                    println!("{}", Board::from(history_out.last().unwrap().tiles));
+                    println!(
+                        "{}",
+                        Board::from((history_out.last().unwrap().tiles, rng_state))
+                    );
                 }
                 println!("Expected: (score {}) ", expected_score);
-                println!("{}", Board::from(predicted_board));
+                println!("{}", Board::from((predicted_board, rng_state)));
                 println!("Got instead: (score {}) ", actual_score);
-                println!("{}", Board::from(board_next));
+                println!("{}", Board::from((board_next, rng_state)));
                 return Err(ValidationError::InvalidScore(
                     ind,
                     expected_score,
@@ -168,6 +154,7 @@ pub fn reconstruct_history(history: Recording) -> Result<HistoryReconstruction, 
             }
             history_out.push(board_predicted);
         }
+        rng_state = board_to_check.rng_state;
     }
     // Get the score margin
     let last_history = history.history.last();
@@ -176,15 +163,9 @@ pub fn reconstruct_history(history: Recording) -> Result<HistoryReconstruction, 
         Some(last_history) => {
             let last_board = last_history.0;
             for dir in direction::REAL_DIRECTIONS {
-                let predicted = check_move(
-                    Board {
-                        tiles: last_board,
-                        width: history.width,
-                        height: history.height,
-                        ..Default::default()
-                    },
-                    dir,
-                );
+                let board = Board::from((last_board, rng_state));
+                rng_state = board.rng_state;
+                let predicted = check_move(board, dir);
                 if let Ok(data) = predicted {
                     score_margin = score_margin.max(data.score_gain);
                 }
@@ -210,12 +191,7 @@ pub fn validate_first_move(history: &Recording) -> bool {
     let history_len = history.history.len();
     if history_len > 0 {
         let first_frame = history.history[0].0;
-        let first_board = Board {
-            tiles: first_frame,
-            width: history.width,
-            height: history.height,
-            ..Default::default()
-        };
+        let first_board = Board::from((first_frame, 0));
         if first_board.get_total_value() < 17 {
             return true;
         }
@@ -223,85 +199,11 @@ pub fn validate_first_move(history: &Recording) -> bool {
     false
 }
 
-/// Returns the accumulated score of a run (should match the score displayed in the game)
-pub fn get_run_score(history: &Recording) -> usize {
-    let mut score: usize = 0;
-    for i in &history.history {
-        let board = i.0;
-        let dir = i.1;
-        let predicted = check_move(
-            Board {
-                tiles: board,
-                width: history.width,
-                height: history.height,
-                ..Default::default()
-            },
-            dir,
-        );
-        if let Ok(data) = predicted {
-            score += data.score_gain;
-        }
-        // should we return the intermediate score if a move is invalid?
-    }
-    score
-}
-
 pub fn initialize_board(width: usize, height: usize, seed: usize, add_tiles: usize) -> Board {
-    let mut board = Board::new(
-        width,
-        height,
-        crate::board::tile_id_assigner::IDAssignment::default(),
-        Some(seed),
-    );
+    let mut board = Board::new(width, height, seed);
     for _ in 0..add_tiles {
         crate::add_random_to_board(&mut board);
     }
 
     board
-}
-
-#[derive(Error, Debug, Clone, Serialize, Deserialize)]
-pub enum MoveReplayError {
-    #[error("invalid move `{0:?}` on move {1}")]
-    InvalidMove(Direction, usize),
-
-    #[error("can't break on move {0} as {1}/{2} breaks have already been used")]
-    InvalidBreak(usize, usize, usize),
-}
-
-/// Intended for reconstructing V2 format games
-pub fn replay_moves(input: ParseDataV2) -> Result<HistoryReconstruction, MoveReplayError> {
-    let mut score: usize = 0;
-    let mut max_score: usize = 0;
-
-    let mut board = initialize_board(input.width, input.height, input.seed, 2);
-    let mut history_out: Vec<Board> = vec![board];
-
-    let breaks: usize = 0;
-    let break_positions = [None; MAX_ALLOWED_BREAKS];
-
-    for (move_index, mv) in input.moves.into_iter().enumerate() {
-        let mvchk =
-            check_move(board, mv).map_err(|_| MoveReplayError::InvalidMove(mv, move_index))?;
-
-        board = mvchk.board;
-        score += mvchk.score_gain;
-        max_score = usize::max(score, max_score);
-
-        add_random_to_board(&mut board);
-
-        history_out.push(board);
-    }
-
-    Ok(HistoryReconstruction {
-        validation_data: ValidationData {
-            valid: true,
-            score: max_score,
-            score_end: score,
-            score_margin: 0,
-            breaks,
-            break_positions,
-        },
-        history: history_out,
-    })
 }

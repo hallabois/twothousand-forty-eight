@@ -5,32 +5,27 @@
 #[allow(clippy::needless_range_loop)]
 pub mod board;
 pub mod direction;
-pub mod parser;
 pub mod random;
-pub mod recording;
-pub mod validator;
+pub mod rules;
+pub mod v1;
+#[cfg(feature = "v2")]
+pub mod v2;
 
 #[cfg(feature = "wasm")]
 pub mod wasm;
 
 use board::tile;
 
-pub fn get_random_tile_to_add(board: &board::Board) -> Option<tile::Tile> {
+pub fn get_random_tile_to_add(board: &mut board::Board) -> Option<tile::Tile> {
     use random::Pickable;
 
     let possible = board.get_non_occupied_tiles();
     if !possible.is_empty() {
-        let seed = board.rng_state;
-        let t = possible.pick_lcg(seed);
+        let t = possible.pick_lcg(&mut board.rng_state);
 
-        let value = tile::Tile::random_value(seed);
+        let value = tile::Tile::random_value(&mut board.rng_state);
 
-        return Some(tile::Tile {
-            x: t.x,
-            y: t.y,
-            value,
-            ..Default::default()
-        });
+        return Some(tile::Tile::new(t.x, t.y, value, tile::InitialID::Id(t.id)));
     }
     None
 }
@@ -44,7 +39,3 @@ pub fn add_random_to_board(board: &mut board::Board) {
         }
     }
 }
-
-// Tests
-#[cfg(test)]
-pub mod tests;

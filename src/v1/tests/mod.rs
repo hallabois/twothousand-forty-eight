@@ -2,13 +2,13 @@ pub mod lib_testgames;
 
 #[cfg(test)]
 mod board {
-    use crate::board::{self, has_possible_moves, tile_id_assigner::IDAssignment};
+    use crate::board;
     use board::Board;
     #[test]
     fn creation_works() {
         for w in 0..board::MAX_WIDTH {
             for h in 0..board::MAX_HEIGHT {
-                let mut board = Board::new(w, h, IDAssignment::default(), None);
+                let mut board = Board::new(w, h, 1);
 
                 let mut index = 0;
                 for x in 0..w {
@@ -36,7 +36,7 @@ mod board {
     fn has_possible_moves_a() {
         let mut board_a = Board::default();
         board_a.set_tile(0, 0, 2);
-        assert!(has_possible_moves(board_a));
+        assert!(board_a.has_possible_moves());
     }
 
     #[test]
@@ -51,22 +51,54 @@ mod board {
 
     #[test]
     fn get_id_sum() {
-        let id_strategy = IDAssignment::SimpleStateful;
-        let mut board = Board::new(4, 4, id_strategy, Some(1));
+        let mut board = Board::new(4, 4, 1);
         board.set_tile(0, 0, 2);
         board.set_tile(0, 1, 4);
         board.set_tile(3, 1, 2);
         let sum = board.get_id_sum();
-        assert_eq!(sum, 173);
+        assert_eq!(sum, 157);
     }
 }
 
 #[cfg(test)]
 mod parser {
+    use std::collections::HashSet;
+
     use rayon::prelude::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
     use super::lib_testgames;
-    use crate::parser;
+    use crate::{
+        board::tile::Tile,
+        v1::{parser, recording::Recording},
+    };
+
+    fn check_history_ids(history: Recording) {
+        for (tiles, _direction, _addition) in history.history {
+            let mut seen_ids: HashSet<usize> = HashSet::new();
+            for y in 0..history.height {
+                for x in 0..history.width {
+                    if let Some(tile) = tiles[y][x] {
+                        if seen_ids.contains(&tile.id) {
+                            panic!("board contains multiple tiles with the same id");
+                        } else {
+                            seen_ids.insert(tile.id);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    fn id_test_works() {
+        let mut history = parser::parse_data("2x1S2.0;0:2.0;0").unwrap();
+        let tile1 = history.history[0].0[0][0].unwrap();
+        let tile2 = history.history[0].0[1][0].unwrap();
+        history.history[0].0[0][0] = Some(Tile { id: 0, ..tile1 });
+        history.history[0].0[1][0] = Some(Tile { id: 0, ..tile2 });
+        check_history_ids(history);
+    }
 
     #[test]
     fn works_4x4() {
@@ -80,10 +112,24 @@ mod parser {
     #[test]
     fn works_3x3() {
         use lib_testgames::GAME3X3;
-        let history4x4 = parser::parse_data(GAME3X3).unwrap();
-        assert_eq!(history4x4.width, 3);
-        assert_eq!(history4x4.height, 3);
-        assert_eq!(history4x4.history.len(), 500);
+        let history = parser::parse_data(GAME3X3).unwrap();
+        assert_eq!(history.width, 3);
+        assert_eq!(history.height, 3);
+        assert_eq!(history.history.len(), 500);
+    }
+
+    #[test]
+    fn produces_coherrent_ids_a() {
+        use lib_testgames::GAME4X4;
+        let history = parser::parse_data(GAME4X4).unwrap();
+        check_history_ids(history);
+    }
+
+    #[test]
+    fn produces_coherrent_ids_b() {
+        use lib_testgames::GAME3X3;
+        let history = parser::parse_data(GAME3X3).unwrap();
+        check_history_ids(history);
     }
 
     #[test]
@@ -91,13 +137,25 @@ mod parser {
     /// Test about 10 000 games gathered from players
     fn works_all_real() {
         use lib_testgames::GAMELIST;
-        let games: Vec<&str> = GAMELIST.split("\n").collect();
+        let games: Vec<&str> = GAMELIST.split('\n').collect();
         games.par_iter().enumerate().for_each(|(i, game)| {
             println!("parsing game {} / {}", i, games.len());
             let history = parser::parse_data(game).unwrap();
             assert!(history.width > 0);
             assert!(history.height > 0);
             assert!(history.history.len() > 0);
+        });
+    }
+
+    #[test]
+    #[ignore = "slow"]
+    fn produces_coherrent_ids_all() {
+        use lib_testgames::GAMELIST;
+        let games: Vec<&str> = GAMELIST.split("\n").collect();
+        games.par_iter().enumerate().for_each(|(i, game)| {
+            println!("parsing game {} / {}", i, games.len());
+            let history = parser::parse_data(game).unwrap();
+            check_history_ids(history);
         });
     }
 }
@@ -110,8 +168,8 @@ mod validator {
 
     use super::lib_testgames;
     use crate::board::Board;
-    use crate::parser;
-    use crate::validator;
+    use crate::v1::parser;
+    use crate::v1::validator;
 
     pub fn assert_score(score: usize, expected: usize, score_margin: usize) {
         assert!(
@@ -130,21 +188,17 @@ mod validator {
         let reconstruction = validator::reconstruct_history(recording.clone()).unwrap();
 
         assert_eq!(history.len(), reconstruction.history.len());
+        let mut rng_state = 0;
 
         for (i, item) in history.iter().enumerate() {
             println!("history index {}", i);
             let history_tiles = item.0;
-            let history_board = Board {
-                width: recording.width,
-                height: recording.height,
-                tiles: history_tiles,
-                ..Default::default()
-            };
+            let history_board = Board::from((history_tiles, rng_state));
             println!("recorded board");
-            println!("{}", Board::from(history_tiles));
+            println!("{}", Board::from((history_tiles, 0)));
             let rec_board = reconstruction.history[i];
             println!("predicted board");
-            println!("{}", Board::from(rec_board.tiles));
+            println!("{}", Board::from((rec_board.tiles, 0)));
 
             let t1 = history_board.get_all_tiles();
             let t2 = rec_board.get_all_tiles();
@@ -157,6 +211,7 @@ mod validator {
                 assert_eq!(ta.y, tb.y);
                 assert_eq!(ta.value, tb.value);
             }
+            rng_state = rec_board.rng_state;
         }
     }
 
@@ -226,7 +281,7 @@ mod validator {
     /// Test about 10 000 games gathered from players
     fn works_all_real() {
         use lib_testgames::GAMELIST;
-        let games: Vec<&str> = GAMELIST.split("\n").collect();
+        let games: Vec<&str> = GAMELIST.split('\n').collect();
         games.par_iter().enumerate().for_each(|(i, game)| {
             println!("parsing game {} / {}", i, games.len());
             let history = parser::parse_data(game).unwrap();
@@ -244,13 +299,13 @@ mod serializers {
 
     #[test]
     fn tile_serializer_null() {
-        let t = Tile::new(0, 0, 0, 0.into());
+        let t = Tile::new(0, 0, 0, crate::board::tile::InitialID::Id(0));
         assert_eq!(t.to_json(), "null");
     }
 
     #[test]
     fn tile_serializer_some() {
-        let t = Tile::new(0, 1, 4, 0.into());
+        let t = Tile::new(0, 1, 4, crate::board::tile::InitialID::Id(0));
 
         assert_eq!(
             t.to_json(),
@@ -260,10 +315,9 @@ mod serializers {
 }
 
 #[cfg(test)]
-#[cfg(feature = "history_hash")]
 mod history_hash {
     use super::lib_testgames;
-    use crate::parser;
+    use crate::v1::parser;
 
     #[test]
     fn history_hash_works() {
