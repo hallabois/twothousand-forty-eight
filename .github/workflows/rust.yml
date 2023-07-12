@@ -16,11 +16,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout with submodules
+    - name: Checkout
       uses: actions/checkout@v2
-      with:
-          token: ${{ secrets.ACCESS_TOKEN }}
-          submodules: recursive
     - name: update rust to nightly
       uses: dtolnay/rust-toolchain@nightly
     - name: Build
