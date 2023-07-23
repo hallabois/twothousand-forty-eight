@@ -16,6 +16,7 @@ pub fn can_break(rules: &dyn Ruleset, board: &Board, score: usize, breaks: usize
     breaks < rules.break_max(board) && rules.break_cost(board) <= score
 }
 
+#[derive(Debug, Clone, Copy, Default)]
 pub struct ClassicV1;
 
 impl Ruleset for ClassicV1 {
@@ -38,6 +39,7 @@ impl Ruleset for ClassicV1 {
     }
 }
 
+#[derive(Debug, Clone, Copy, Default)]
 pub struct ClassicV2;
 
 impl Ruleset for ClassicV2 {
@@ -68,5 +70,60 @@ impl Ruleset for ClassicV2 {
 
     fn won(&self, board: &Board) -> bool {
         board.get_all_tiles().iter().any(|t| t.value >= 2048)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_classic_v1() {
+        let rules = ClassicV1;
+        let board = Board::new(4, 4, 0);
+        assert_eq!(rules.break_cost(&board), 1000);
+        assert_eq!(rules.break_max(&board), 3);
+        assert_eq!(rules.break_tile_threshold(&board), 16);
+        assert!(!rules.game_over(&board));
+        assert!(!rules.won(&board));
+    }
+
+    #[test]
+    fn test_classic_v2() {
+        let rules = ClassicV2;
+        let board = Board::new(4, 4, 0);
+        assert_eq!(rules.break_cost(&board), 1000);
+        assert_eq!(rules.break_max(&board), 3);
+        assert_eq!(rules.break_tile_threshold(&board), 16);
+        assert!(!rules.game_over(&board));
+        assert!(!rules.won(&board));
+    }
+
+    #[test]
+    fn breaks_v1() {
+        let rules = ClassicV1;
+        let board = Board::new(4, 4, 0);
+        assert!(can_break(&rules, &board, 1000, 0));
+        assert!(can_break(&rules, &board, 1000, 1));
+        assert!(can_break(&rules, &board, 1000, 2));
+        assert!(!can_break(&rules, &board, 1000, 3));
+        assert!(!can_break(&rules, &board, 999, 0));
+        assert!(!can_break(&rules, &board, 999, 1));
+        assert!(!can_break(&rules, &board, 999, 2));
+        assert!(!can_break(&rules, &board, 999, 3));
+    }
+
+    #[test]
+    fn breaks_v2() {
+        let rules = ClassicV2;
+        let board = Board::new(4, 4, 0);
+        assert!(can_break(&rules, &board, 1000, 0));
+        assert!(can_break(&rules, &board, 1000, 1));
+        assert!(can_break(&rules, &board, 1000, 2));
+        assert!(!can_break(&rules, &board, 1000, 3));
+        assert!(!can_break(&rules, &board, 999, 0));
+        assert!(!can_break(&rules, &board, 999, 1));
+        assert!(!can_break(&rules, &board, 999, 2));
+        assert!(!can_break(&rules, &board, 999, 3));
     }
 }

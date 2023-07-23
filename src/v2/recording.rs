@@ -48,7 +48,7 @@ impl SeededRecording {
     }
 
     pub fn reconstruct(&self) -> Result<HistoryReconstruction, MoveReplayError> {
-        replay_moves(self, self.get_ruleset())
+        replay_moves(self, &*self.get_ruleset())
     }
 
     pub fn get_current_board(&self) -> Result<crate::board::Board, MoveReplayError> {

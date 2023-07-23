@@ -503,7 +503,7 @@ mod tests {
         ensure_no_same_ids(&board);
         for i in 0..500 {
             let mut fake_seed = i;
-            let dir = direction::REAL_DIRECTIONS.pick_lcg(&mut fake_seed);
+            let dir = direction::MOVE_DIRECTIONS.pick_lcg(&mut fake_seed);
             if board.move_in_direction(*dir).is_ok() {
                 add_random_to_board(&mut board);
             }

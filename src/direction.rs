@@ -25,13 +25,20 @@ pub enum Direction {
     END,
 }
 
-/// A list of all the directions excluding the empty placeholder END direction
+/// A list of all the directions excluding the END and START directions
 pub const REAL_DIRECTIONS: [Direction; 5] = [
     Direction::UP,
     Direction::RIGHT,
     Direction::DOWN,
     Direction::LEFT,
     Direction::BREAK,
+];
+/// A list of all the directions a tile can move to
+pub const MOVE_DIRECTIONS: [Direction; 4] = [
+    Direction::UP,
+    Direction::RIGHT,
+    Direction::DOWN,
+    Direction::LEFT,
 ];
 impl Direction {
     /// Get the X component of a direction, e.g. UP => 0, RIGHT => 1

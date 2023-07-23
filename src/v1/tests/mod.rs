@@ -75,15 +75,11 @@ mod parser {
     fn check_history_ids(history: Recording) {
         for (tiles, _direction, _addition) in history.history {
             let mut seen_ids: HashSet<usize> = HashSet::new();
-            for y in 0..history.height {
-                for x in 0..history.width {
-                    if let Some(tile) = tiles[y][x] {
-                        if seen_ids.contains(&tile.id) {
-                            panic!("board contains multiple tiles with the same id");
-                        } else {
-                            seen_ids.insert(tile.id);
-                        }
-                    }
+            for tile in tiles.iter().flatten().flatten() {
+                if seen_ids.contains(&tile.id) {
+                    panic!("board contains multiple tiles with the same id");
+                } else {
+                    seen_ids.insert(tile.id);
                 }
             }
         }
@@ -143,7 +139,7 @@ mod parser {
             let history = parser::parse_data(game).unwrap();
             assert!(history.width > 0);
             assert!(history.height > 0);
-            assert!(history.history.len() > 0);
+            assert!(!history.history.is_empty())
         });
     }
 
@@ -151,7 +147,7 @@ mod parser {
     #[ignore = "slow"]
     fn produces_coherrent_ids_all() {
         use lib_testgames::GAMELIST;
-        let games: Vec<&str> = GAMELIST.split("\n").collect();
+        let games: Vec<&str> = GAMELIST.split('\n').collect();
         games.par_iter().enumerate().for_each(|(i, game)| {
             println!("parsing game {} / {}", i, games.len());
             let history = parser::parse_data(game).unwrap();
@@ -184,8 +180,8 @@ mod validator {
     fn history_reconstruction() {
         use lib_testgames::GAME4X4;
         let recording = parser::parse_data(GAME4X4).unwrap();
-        let history = recording.history.clone();
-        let reconstruction = validator::reconstruct_history(recording.clone()).unwrap();
+        let reconstruction = validator::reconstruct_history(&recording).unwrap();
+        let history = recording.history;
 
         assert_eq!(history.len(), reconstruction.history.len());
         let mut rng_state = 0;

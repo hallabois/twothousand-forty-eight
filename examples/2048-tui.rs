@@ -12,74 +12,68 @@ use ratatui::{
 };
 use std::io::{self, Stdout};
 
-use twothousand_forty_eight::{
-    board::Board, rules::ClassicV2, v2::game::replay_moves, v2::recording::SeededRecording,
-};
-struct GameState {
-    board: Board,
-    move_count: usize,
-    score: usize,
-    high_score: usize,
-    game_over: bool,
+use twothousand_forty_eight::{v2::game::GameState, v2::recording::SeededRecording};
+struct State {
+    gamestate: GameState,
     message: String,
-    history: SeededRecording,
+    hiscore: usize,
 }
-impl GameState {
+impl State {
     pub fn new(message: Option<&str>) -> Self {
         let random_seed = rand::random();
         let history = SeededRecording::empty(random_seed, 4, 4);
-        let rules = Box::new(ClassicV2);
-        let move_count = history.moves.len();
-        let board = *replay_moves(&history, rules)
-            .unwrap()
-            .history
-            .last()
-            .unwrap();
-
+        let gamestate = GameState::try_from(&history).unwrap();
         Self {
-            board,
-            score: 0,
-            move_count,
-            high_score: 0,
-            game_over: false,
+            gamestate,
             message: message.unwrap_or_default().to_string(),
-            history,
+            hiscore: 0,
         }
     }
     pub fn save(&self) {
-        let history_string: String = (&self.history).into();
-        std::fs::write("savegame.txt", history_string).unwrap();
+        let history_string: String = (&self.gamestate.history).into();
+        let stats = format!(
+            "------- STATS -------\nScore: {}\nSeed: {}\nBreaks: {:?}\nMoves: {}\nAllowed moves: {:?}\n------- BOARD -------\n{}\n---------------------",
+            self.gamestate.score,
+            self.gamestate.board.rng_state,
+            self.gamestate.break_positions,
+            self.gamestate.history.moves.len(),
+            self.gamestate.allowed_moves,
+            self.gamestate.board,
+        );
+        std::fs::write("savegame.txt", format!("{history_string}\n{stats}")).unwrap();
+    }
+    pub fn load(path: &str) -> Self {
+        let file_str = std::fs::read_to_string(path).unwrap();
+        // We only take the first line to allow comments & other cool stuff
+        let history_string = file_str.lines().next().unwrap();
+        let history: SeededRecording = match history_string.parse() {
+            Ok(history) => history,
+            Err(e) => {
+                return Self::new(Some(&format!("Error parsing history: {:?}", e)));
+            }
+        };
+        let gamestate = match GameState::try_from(&history) {
+            Ok(gamestate) => gamestate,
+            Err(e) => {
+                return Self::new(Some(&format!("Error reconstructing game: {:?}", e)));
+            }
+        };
+        let hiscore = gamestate.score;
+        Self {
+            message: format!("Loaded game from {path}"),
+            gamestate,
+            hiscore,
+        }
     }
 }
-impl Default for GameState {
+impl Default for State {
     fn default() -> Self {
+        const SAVE_PATH: &str = "savegame.txt";
         // check if savegame.txt exists
         // if it does, load it
         // if it doesn't, create a new game
-        if std::path::Path::new("savegame.txt").exists() {
-            let history_string = std::fs::read_to_string("savegame.txt").unwrap();
-            let history: SeededRecording = match history_string.parse() {
-                Ok(history) => history,
-                Err(e) => {
-                    return Self::new(Some(&format!("Error parsing history: {:?}", e)));
-                }
-            };
-            let replay = match history.reconstruct() {
-                Ok(replay) => replay,
-                Err(e) => {
-                    return Self::new(Some(&format!("Error reconstructing history: {:?}", e)));
-                }
-            };
-            let board = *replay.history.last().unwrap();
-            return Self {
-                board,
-                score: replay.validation_data.score_end,
-                move_count: history.moves.len(),
-                high_score: 0,
-                game_over: false,
-                message: String::from("Loaded game from savegame.txt"),
-                history,
-            };
+        if std::path::Path::new(SAVE_PATH).exists() {
+            return Self::load(SAVE_PATH);
         }
         Self::new(None)
     }
@@ -95,7 +89,7 @@ impl Default for GameState {
 /// presses 'q'.
 fn main() -> Result<()> {
     let mut terminal = setup_terminal().context("setup failed")?;
-    run(&mut terminal, GameState::default()).context("app loop failed")?;
+    run(&mut terminal, State::default()).context("app loop failed")?;
     restore_terminal(&mut terminal).context("restore terminal failed")?;
     Ok(())
 }
@@ -123,7 +117,7 @@ fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result
 /// state. This example exits when the user presses 'q'. Other styles of application loops are
 /// possible, for example, you could have multiple application states and switch between them based
 /// on events, or you could have a single application state and update it based on events.
-fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>, mut gamestate: GameState) -> Result<()> {
+fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>, mut gamestate: State) -> Result<()> {
     loop {
         terminal.draw(|f| crate::render_app(f, &gamestate))?;
         if let Event::Key(key) = event::read()? {
@@ -158,9 +152,9 @@ fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>, mut gamestate: GameSta
                     );
                 }
                 KeyCode::Char('r') => {
-                    let hiscore = gamestate.high_score;
-                    gamestate = GameState::new(None);
-                    gamestate.high_score = hiscore;
+                    let hiscore = gamestate.hiscore;
+                    gamestate = State::new(None);
+                    gamestate.hiscore = hiscore;
                 }
                 KeyCode::Char('b') => {
                     move_in_direction(
@@ -180,46 +174,37 @@ fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>, mut gamestate: GameSta
     }
 }
 
-fn move_in_direction(
-    gamestate: &mut GameState,
-    direction: twothousand_forty_eight::direction::Direction,
-) {
-    let validation_data = gamestate.history.validate().unwrap();
-    let rules = gamestate.history.get_ruleset();
-    let can_break = twothousand_forty_eight::rules::can_break(
-        rules.as_ref(),
-        &gamestate.board,
-        validation_data.score,
-        validation_data.breaks,
-    );
-
-    let result = twothousand_forty_eight::board::check_move(gamestate.board, direction);
-    match result {
-        Ok(result) => {
-            gamestate.message = String::new();
-            gamestate.board = result.board;
-            gamestate.score += result.score_gain;
-            gamestate.high_score = gamestate.high_score.max(gamestate.score);
-            gamestate.game_over = false;
-
-            twothousand_forty_eight::add_random_to_board(&mut gamestate.board);
-            gamestate.move_count += 1;
-
-            gamestate.history.moves.push(direction);
-            let history_string: String = (&gamestate.history).into();
-            let history: SeededRecording = history_string.parse().unwrap();
-            assert_eq!(history, gamestate.history);
-            gamestate.board = *history.reconstruct().unwrap().history.last().unwrap();
-        }
+fn move_in_direction(state: &mut State, direction: twothousand_forty_eight::direction::Direction) {
+    if !state.gamestate.allowed_moves.contains(&direction) {
+        state.message = format!("Move to direction {:?} not allowed.", direction);
+        return;
+    }
+    let mut new_history = state.gamestate.history.clone();
+    new_history.moves.push(direction);
+    let history_string: String = (&new_history).into();
+    match history_string.parse::<SeededRecording>() {
+        Ok(history) => match GameState::try_from(&history) {
+            Ok(gamestate) => {
+                state.gamestate = gamestate;
+                state.message = String::new();
+                if state.gamestate.score > state.hiscore {
+                    state.hiscore = state.gamestate.score;
+                }
+            }
+            Err(e) => {
+                state.message = format!("{:?}", e);
+            }
+        },
         Err(e) => {
-            gamestate.message = format!("{:?}", e);
+            state.message = format!("{:?}", e);
         }
     }
 }
 
 /// Render the application. This is where you would draw the application UI. This example just
 /// draws a greeting.
-fn render_app(frame: &mut ratatui::Frame<CrosstermBackend<Stdout>>, gamestate: &GameState) {
+fn render_app(frame: &mut ratatui::Frame<CrosstermBackend<Stdout>>, state: &State) {
+    let gamestate = &state.gamestate;
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(2)
@@ -247,19 +232,28 @@ fn render_app(frame: &mut ratatui::Frame<CrosstermBackend<Stdout>>, gamestate: &
     ))
     .style(ratatui::style::Style::default().fg(ratatui::style::Color::Yellow));
     frame.render_widget(title, chunks[0]);
-    let score = Paragraph::new(format!("Score: {}", gamestate.score));
-    frame.render_widget(score, chunks[1]);
-    let high_score = Paragraph::new(format!("High Score: {}", gamestate.high_score));
-    frame.render_widget(high_score, chunks[2]);
-    let seed = Paragraph::new(format!(
-        "Seed/State: {}, Move {}",
-        gamestate.board.rng_state, gamestate.move_count
+    let score = Paragraph::new(format!(
+        "Score: {}{}",
+        state.gamestate.score,
+        if state
+            .gamestate
+            .allowed_moves
+            .contains(&twothousand_forty_eight::direction::Direction::BREAK)
+        {
+            " (can break)"
+        } else {
+            ""
+        }
     ));
+    frame.render_widget(score, chunks[1]);
+    let hiscore = Paragraph::new(format!("High Score: {}", state.hiscore));
+    frame.render_widget(hiscore, chunks[2]);
+    let seed = Paragraph::new(format!("Seed/State: {}", gamestate.board.rng_state,));
     frame.render_widget(seed, chunks[3]);
     let validation_data = gamestate.history.validate().unwrap();
     let info = Paragraph::new(format!("{:?}", validation_data));
     frame.render_widget(info, chunks[4]);
-    let message = Paragraph::new(format!("{}", gamestate.message));
+    let message = Paragraph::new(format!("{}", state.message));
     frame.render_widget(message, chunks[5]);
     let board = Table::new(gamestate.board.tiles.iter().map(|row| {
         Row::new(
@@ -291,31 +285,8 @@ fn render_app(frame: &mut ratatui::Frame<CrosstermBackend<Stdout>>, gamestate: &
         Constraint::Length(4),
         Constraint::Length(4),
     ]);
-    let idboard = Table::new(gamestate.board.tiles.iter().map(|row| {
-        Row::new(
-            row.iter()
-                .map(|tile| match tile {
-                    Some(tile) => Cell::from(format!("{}", tile.id)).style(get_tile_style(tile)),
-                    None => Cell::from("?"),
-                })
-                .collect::<Vec<Cell>>(),
-        )
-    }))
-    .column_spacing(1)
-    .block(
-        Block::default()
-            .border_type(ratatui::widgets::BorderType::Rounded)
-            .borders(Borders::all())
-            .padding(ratatui::widgets::Padding::horizontal(1)),
-    )
-    .widths(&[
-        Constraint::Length(20),
-        Constraint::Length(20),
-        Constraint::Length(20),
-        Constraint::Length(20),
-    ]);
+
     frame.render_widget(board, boardchunks[0]);
-    frame.render_widget(idboard, boardchunks[1]);
 }
 
 fn get_tile_style(tile: &twothousand_forty_eight::board::tile::Tile) -> ratatui::style::Style {

@@ -16,7 +16,7 @@ pub fn parse(data: &str) -> String {
 #[wasm_bindgen]
 pub fn get_frames(data: &str) -> String {
     let parsed = v1::parser::parse_data(data).unwrap();
-    let reconstruction = v1::validator::reconstruct_history(parsed).unwrap();
+    let reconstruction = v1::validator::reconstruct_history(&parsed).unwrap();
 
     serde_json::to_string(&reconstruction.history).unwrap()
 }

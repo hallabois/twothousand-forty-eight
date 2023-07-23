@@ -27,6 +27,7 @@ pub enum ValidationError {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct ValidationData {
     /// Depreciated, will always be true, specific errors are now returned on invalid games
+    #[deprecated]
     pub valid: bool,
     /// The maximum score reached during the run, 0 if the run is not valid
     pub score: usize,
@@ -42,17 +43,16 @@ pub struct ValidationData {
 
 /// Validates the history continuity and returns the determined validity, score, possible score margin (caused when the last game move was not recorded) and break count.
 pub fn validate_history(history: Recording) -> Result<ValidationData, ValidationError> {
-    let reconstruction = reconstruct_history(history)?;
+    let reconstruction = reconstruct_history(&history)?;
     Ok(reconstruction.validation_data)
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "wasm", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct HistoryReconstruction {
     pub validation_data: ValidationData,
     pub history: Vec<Board>,
 }
-pub fn reconstruct_history(history: Recording) -> Result<HistoryReconstruction, ValidationError> {
+pub fn reconstruct_history(history: &Recording) -> Result<HistoryReconstruction, ValidationError> {
     let mut score: usize = 0;
     let mut score_margin: usize = 0;
     let mut max_score: usize = 0;
