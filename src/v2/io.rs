@@ -41,14 +41,24 @@ pub enum SeededRecordingParseError {
 }
 
 /// Converts a string to a [SeededRecording].
+///
 /// Schema:
+///
 ///    ::(version):(width):(height):(seed):(moves)\n(arbitrary data)
-/// where moves is a base64 encoded string of the moves, each move is represented by a single byte with 5 possible states:
-/// 0: Up
-/// 1: Down
-/// 2: Left
-/// 3: Right
-/// 4: None / End / Padding
+///
+/// where moves is a base64 encoded string of the moves, each move is represented by a single byte with 6 possible states:
+///
+/// 0: Not used
+///
+/// 1: Up
+///
+/// 2: Down
+///
+/// 3: Left
+///
+/// 4: Right
+///
+/// 5: None / End / Padding
 impl FromStr for SeededRecording {
     type Err = SeededRecordingParseError;
 

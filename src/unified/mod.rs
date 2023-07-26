@@ -119,10 +119,7 @@ pub mod tests {
 
     #[test]
     fn validate_v1() {
-        let data = crate::v1::tests::lib_testgames::GAMELIST
-            .split('\n')
-            .nth(13)
-            .unwrap();
+        let data = crate::v1::tests::lib_testgames::GAME4X4;
         assert!(super::validate(data).is_ok());
     }
 
@@ -134,10 +131,7 @@ pub mod tests {
 
     #[test]
     fn gamestate_v1() {
-        let data = crate::v1::tests::lib_testgames::GAMELIST
-            .split('\n')
-            .nth(13)
-            .unwrap();
+        let data = crate::v1::tests::lib_testgames::GAME4X4;
         assert!(super::get_gamestate(data).is_ok());
     }
 

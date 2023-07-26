@@ -13,7 +13,8 @@ use crate::{
 };
 
 /// Represents a seeded recording of a played game of 2048.
-/// Unlike [crate::v1::recording::Recording] a [SeededRecording] can be parsed by just using `TryFrom`.
+///
+/// Unlike [crate::v1::recording::Recording], [SeededRecording] can be parsed by just using `TryFrom`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Hash, Eq)]
 pub struct SeededRecording {
     #[serde(alias = "v")]

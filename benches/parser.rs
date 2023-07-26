@@ -11,7 +11,7 @@ pub const GAMEOBSCENE: &str = include_str!("../games/v1/GAME4X4BIG.txt");
 pub const GAMELIST: &str = include_str!("../games/v1/composite.txt");
 pub fn get_random_game() -> &'static str {
     let mut rng = rand::thread_rng();
-    let games: Vec<&str> = GAMELIST.split('\n').collect();
+    let games: Vec<&str> = GAMELIST.lines().collect();
     let index = rand::Rng::gen_range(&mut rng, 0..games.len());
     games[index]
 }

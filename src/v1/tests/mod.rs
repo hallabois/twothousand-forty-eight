@@ -133,8 +133,8 @@ mod parser {
     /// Test about 10 000 games gathered from players
     fn works_all_real() {
         use lib_testgames::GAMELIST;
-        let games: Vec<&str> = GAMELIST.split('\n').collect();
-        games.par_iter().enumerate().for_each(|(i, game)| {
+        let games: Vec<&str> = GAMELIST.lines().collect();
+        games.iter().enumerate().for_each(|(i, game)| {
             println!("parsing game {} / {}", i, games.len());
             let history = parser::parse_data(game).unwrap();
             assert!(history.width > 0);
@@ -147,7 +147,7 @@ mod parser {
     #[ignore = "slow"]
     fn produces_coherrent_ids_all() {
         use lib_testgames::GAMELIST;
-        let games: Vec<&str> = GAMELIST.split('\n').collect();
+        let games: Vec<&str> = GAMELIST.lines().collect();
         games.par_iter().enumerate().for_each(|(i, game)| {
             println!("parsing game {} / {}", i, games.len());
             let history = parser::parse_data(game).unwrap();
@@ -279,7 +279,7 @@ mod validator {
     /// Test about 10 000 games gathered from players
     fn works_all_real() {
         use lib_testgames::GAMELIST;
-        let games: Vec<&str> = GAMELIST.split('\n').collect();
+        let games: Vec<&str> = GAMELIST.lines().collect();
         games.par_iter().enumerate().for_each(|(i, game)| {
             println!("parsing game {} / {}", i, games.len());
             let history = parser::parse_data(game).unwrap();

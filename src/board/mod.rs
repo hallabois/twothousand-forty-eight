@@ -202,7 +202,7 @@ impl From<(Tiles, usize)> for Board {
             .filter_map(|t| t.as_ref())
             .map(|t| t.id)
             .max()
-            .unwrap_or_default();
+            .unwrap_or(0);
         Board {
             width,
             height,

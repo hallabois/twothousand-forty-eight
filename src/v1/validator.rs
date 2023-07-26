@@ -16,6 +16,9 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 #[derive(Error, Debug, Clone, Serialize, Deserialize)]
 pub enum ValidationError {
+    #[error("invalid starting configuration")]
+    InvalidStartingConfiguration,
+
     #[error("invalid addition `{1:?}` on move {0}")]
     InvalidAddition(usize, Tile),
 
@@ -26,6 +29,9 @@ pub enum ValidationError {
 impl Validatable for Recording {
     type Error = ValidationError;
     fn validate(&self) -> Result<ValidationResult, Self::Error> {
+        if !validate_first_move(self) {
+            return Err(ValidationError::InvalidStartingConfiguration);
+        }
         let reconstruction = self.reconstruct()?;
         Ok(reconstruction.validation_data)
     }
@@ -173,12 +179,17 @@ impl RulesetProvider for Recording {
     }
 }
 
-/// Makes sure that the starting state of the history doesn't contain too many tiles or tiles with a too big value.
+/// Makes sure that the starting state of the history doesn't contain too many tiles or tiles with too big values.
 pub fn validate_first_move(history: &Recording) -> bool {
     let history_len = history.history.len();
     if history_len > 0 {
         let first_frame = history.history[0].0;
         let first_board = Board::from((first_frame, 0));
+        for tile in first_board.get_all_tiles() {
+            if tile.value > 4 {
+                return false;
+            }
+        }
         if first_board.get_total_value() < 17 {
             return true;
         }

@@ -1,3 +1,5 @@
+//! Pseudo-random number generation for game logic
+
 // https://stackoverflow.com/questions/3062746/special-simple-random-number-generator
 
 use std::num::Wrapping;
