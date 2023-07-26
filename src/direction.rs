@@ -4,6 +4,9 @@ use serde::{Deserialize, Serialize};
 
 /// A representation of the possible move directions during the game.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[cfg(feature = "wasm")]
+#[derive(tsify::Tsify)]
+#[cfg_attr(feature = "wasm", tsify(into_wasm_abi, from_wasm_abi))]
 pub enum Direction {
     /// The game was just started and no move was made on the first frame. Not possible in a real game but some functions need this.
     #[serde(alias = "5", alias = "s")]

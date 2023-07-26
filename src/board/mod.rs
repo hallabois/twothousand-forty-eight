@@ -14,10 +14,14 @@ pub const MAX_WIDTH: usize = 5;
 /// Max height of a board the program can handle. Be careful when increasing, as this increases memory use expotentially.
 pub const MAX_HEIGHT: usize = 5;
 
+#[cfg_attr(feature = "wasm", tsify::declare)]
 pub type Tiles = [[Option<Tile>; MAX_WIDTH]; MAX_HEIGHT];
 
 /// Holds game board data
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg(feature = "wasm")]
+#[derive(tsify::Tsify)]
+#[cfg_attr(feature = "wasm", tsify(into_wasm_abi, from_wasm_abi))]
 pub struct Board {
     /// The width of the board. Value of 0 is untested
     pub width: usize,
@@ -368,10 +372,14 @@ pub struct MoveResult {
     pub score_gain: usize,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+use thiserror::Error;
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Error)]
 pub enum MoveError {
+    #[error("No valid moves left")]
     NoValidMovesLeft,
+    #[error("Move has no effect")]
     HasNoEffect,
+    #[error("Break not allowed")]
     BreakNotAllowed,
 }
 

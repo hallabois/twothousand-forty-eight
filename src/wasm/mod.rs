@@ -5,28 +5,29 @@
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
-use crate::{board::Board, *};
+use crate::{
+    board::Board,
+    unified::{reconstruction::HistoryReconstruction, validation::ValidationResult, ParseResult},
+    *,
+};
 
-fn err_str(e: impl std::fmt::Display) -> String {
-    format!("{}", e)
+fn err_str(e: impl std::fmt::Display) -> JsValue {
+    JsValue::from_str(&format!("{}", e))
 }
 
 #[wasm_bindgen]
-pub fn parse(data: &str) -> Result<JsValue, JsValue> {
-    let result = unified::parse(data).map_err(err_str)?;
-    Ok(serde_wasm_bindgen::to_value(&result)?)
+pub fn parse(data: &str) -> Result<ParseResult, JsValue> {
+    unified::parse(data).map_err(err_str)
 }
 
 #[wasm_bindgen]
-pub fn get_frames(data: &str) -> Result<JsValue, JsValue> {
-    let result = unified::reconstruct(data).map_err(err_str)?;
-    Ok(serde_wasm_bindgen::to_value(&result)?)
+pub fn get_frames(data: &str) -> Result<HistoryReconstruction, JsValue> {
+    unified::reconstruct(data).map_err(err_str)
 }
 
 #[wasm_bindgen]
-pub fn validate(data: &str) -> Result<JsValue, JsValue> {
-    let result = unified::validate(data).map_err(err_str)?;
-    Ok(serde_wasm_bindgen::to_value(&result)?)
+pub fn validate(data: &str) -> Result<ValidationResult, JsValue> {
+    unified::validate(data).map_err(err_str)
 }
 /*
 #[wasm_bindgen]
@@ -55,32 +56,34 @@ pub fn validate_all_frames(data: &str) -> String {
 */
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct WasmMoveResult {
+#[cfg(feature = "wasm")]
+#[derive(tsify::Tsify)]
+#[cfg_attr(feature = "wasm", tsify(into_wasm_abi, from_wasm_abi))]
+pub struct MoveResult {
     board: Board,
     score_gain: usize,
 }
 
 #[wasm_bindgen]
-pub fn apply_move(board_data: &str, dir: usize, add_random: bool) -> Result<JsValue, JsValue> {
+pub fn apply_move(board_data: &str, dir: usize, add_random: bool) -> Result<MoveResult, JsValue> {
     let mut board: Board = serde_json::from_str(board_data).map_err(err_str)?;
     let result = board.move_in_direction(direction::Direction::from_index(dir));
     if result.is_ok() && add_random {
         board.add_random_tile();
     }
-    Ok(serde_wasm_bindgen::to_value(
-        &result.map(|score_gain| WasmMoveResult { board, score_gain }),
-    )?)
+    result
+        .map(|score_gain| MoveResult { board, score_gain })
+        .map_err(err_str)
 }
 
 #[wasm_bindgen]
-pub fn add_random(board_data: &str) -> String {
-    let mut game: Board = serde_json::from_str(board_data).unwrap();
-    game.add_random_tile();
-    serde_json::to_string(&game.tiles).unwrap()
+pub fn add_random(board: Board) -> Board {
+    let mut board = board;
+    board.add_random_tile();
+    board
 }
 
 #[wasm_bindgen]
-pub fn hash(data: &str) -> Result<JsValue, JsValue> {
-    let result = unified::hash(data).map_err(err_str)?;
-    Ok(serde_wasm_bindgen::to_value(&result)?)
+pub fn hash(data: &str) -> Result<String, JsValue> {
+    unified::hash(data).map_err(err_str)
 }

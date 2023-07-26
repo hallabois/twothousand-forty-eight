@@ -7,6 +7,9 @@ use crate::random::Pickable;
 /// Tile is a basic representation of the tiles on the game board.
 #[allow(clippy::derived_hash_with_manual_eq)]
 #[derive(Debug, Copy, Clone, Eq, Serialize, Deserialize)]
+#[cfg(feature = "wasm")]
+#[derive(tsify::Tsify)]
+#[cfg_attr(feature = "wasm", tsify(into_wasm_abi, from_wasm_abi))]
 pub struct Tile {
     /// x coordinate of the tile, usize is always greater than zero
     pub x: usize,

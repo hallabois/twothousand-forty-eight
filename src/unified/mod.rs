@@ -83,6 +83,9 @@ pub fn get_gamestate(data: &str) -> anyhow::Result<game::GameState> {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg(feature = "wasm")]
+#[derive(tsify::Tsify)]
+#[cfg_attr(feature = "wasm", tsify(into_wasm_abi, from_wasm_abi))]
 pub enum ParseResult {
     V1(v1::recording::Recording),
     V2(v2::recording::SeededRecording),

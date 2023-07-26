@@ -6,10 +6,14 @@ use crate::unified::hash::Hashable;
 
 use serde::{Deserialize, Serialize};
 
+#[cfg_attr(feature = "wasm", tsify::declare)]
 pub type History = Vec<(Tiles, Direction, Option<Tile>)>;
 
 /// Represents a recording of a played game of 2048, usually parsed from a string with [parser](crate::v1::parser).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Hash)]
+#[cfg(feature = "wasm")]
+#[derive(tsify::Tsify)]
+#[cfg_attr(feature = "wasm", tsify(into_wasm_abi, from_wasm_abi))]
 pub struct Recording {
     /// The width of the recorded game
     pub width: usize,

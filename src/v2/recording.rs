@@ -16,6 +16,9 @@ use crate::{
 ///
 /// Unlike [crate::v1::recording::Recording], [SeededRecording] can be parsed by just using `TryFrom`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Hash, Eq)]
+#[cfg(feature = "wasm")]
+#[derive(tsify::Tsify)]
+#[cfg_attr(feature = "wasm", tsify(into_wasm_abi, from_wasm_abi))]
 pub struct SeededRecording {
     #[serde(alias = "v")]
     pub version: u8,
