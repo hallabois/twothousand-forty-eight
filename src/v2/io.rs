@@ -103,7 +103,7 @@ fn parse_v2(data: &str) -> Result<SeededRecording, SeededRecordingParseError> {
     let seed = split
         .next()
         .ok_or(SeededRecordingParseError::MissingSeed)?
-        .parse::<usize>()
+        .parse::<u32>()
         .map_err(SeededRecordingParseError::InvalidSeed)?;
     let moves = split
         .next()
@@ -183,22 +183,22 @@ mod tests {
 
     #[test]
     fn parse() {
-        let data = test_data::GAME_EBAY;
+        let data = test_data::GAME_LS0T;
         data.parse::<SeededRecording>().unwrap();
     }
 
     #[test]
     fn comments() {
-        let data = test_data::GAME_EBAY_COMMENTED;
+        let data = test_data::GAME_LS0T_COMMENTED;
         data.parse::<SeededRecording>().unwrap();
     }
 
     #[test]
     fn comments_hash() {
-        let data = test_data::GAME_EBAY_COMMENTED;
+        let data = test_data::GAME_LS0T_COMMENTED;
         assert_eq!(
             data.parse::<SeededRecording>().unwrap().game_hash(),
-            test_data::GAME_EBAY_HASH
+            test_data::GAME_LS0T_HASH
         );
     }
 }

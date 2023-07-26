@@ -71,7 +71,7 @@ impl Tile {
         }
     }
 
-    pub fn random_value(seed: &mut usize) -> usize {
+    pub fn random_value(seed: &mut u32) -> usize {
         let possible_values: [usize; 4] = [2, 2, 2, 4];
         *possible_values.pick_lcg(seed)
     }

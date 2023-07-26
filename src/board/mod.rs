@@ -33,7 +33,7 @@ pub struct Board {
     pub tiles: Tiles,
 
     /// State of the random number generator
-    pub rng_state: usize,
+    pub rng_state: u32,
 
     /// State of the id generator, the last id that was assigned
     id_counter: usize,
@@ -41,7 +41,7 @@ pub struct Board {
 
 impl Board {
     /// Create a new board with a specified width and height and initialize all tiles
-    pub fn new(width: usize, height: usize, seed: usize) -> Board {
+    pub fn new(width: usize, height: usize, seed: u32) -> Board {
         let mut id_counter = 0;
         Board {
             width,
@@ -192,12 +192,12 @@ impl Board {
 /// Initialize a new 4x4 board with [Board::new] and a random seed
 impl Default for Board {
     fn default() -> Board {
-        Board::new(4, 4, rand::random::<usize>())
+        Board::new(4, 4, rand::random::<u32>())
     }
 }
 
-impl From<(Tiles, usize)> for Board {
-    fn from((tiles, rng_state): (Tiles, usize)) -> Self {
+impl From<(Tiles, u32)> for Board {
+    fn from((tiles, rng_state): (Tiles, u32)) -> Self {
         let height = tiles.len();
         let width = if height > 0 { tiles[0].len() } else { 0 };
         let largest_id = tiles

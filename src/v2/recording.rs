@@ -23,7 +23,7 @@ pub struct SeededRecording {
     #[serde(alias = "v")]
     pub version: u8,
     #[serde(alias = "s")]
-    pub seed: usize,
+    pub seed: u32,
     #[serde(alias = "w")]
     pub width: usize,
     #[serde(alias = "h")]
@@ -42,7 +42,7 @@ pub enum BoardFetchError {
 
 const SEEDED_RECORDING_CURRENT_VERSION: u8 = 2;
 impl SeededRecording {
-    pub fn new(seed: usize, width: usize, height: usize, moves: Vec<Direction>) -> Self {
+    pub fn new(seed: u32, width: usize, height: usize, moves: Vec<Direction>) -> Self {
         Self {
             version: SEEDED_RECORDING_CURRENT_VERSION,
             seed,
@@ -51,7 +51,7 @@ impl SeededRecording {
             moves,
         }
     }
-    pub fn empty(seed: usize, width: usize, height: usize) -> Self {
+    pub fn empty(seed: u32, width: usize, height: usize) -> Self {
         Self::new(seed, width, height, vec![])
     }
 
@@ -98,13 +98,13 @@ impl Hashable for SeededRecording {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::{unified::hash::Hashable, v2::test_data::GAME_EBAY_HASH};
+    use crate::{unified::hash::Hashable, v2::test_data::GAME_LS0T_HASH};
 
     use super::SeededRecording;
 
     #[test]
     fn hash() {
-        let parsed: SeededRecording = crate::v2::test_data::GAME_EBAY.parse().unwrap();
-        assert_eq!(parsed.game_hash(), GAME_EBAY_HASH);
+        let parsed: SeededRecording = crate::v2::test_data::GAME_LS0T.parse().unwrap();
+        assert_eq!(parsed.game_hash(), GAME_LS0T_HASH);
     }
 }

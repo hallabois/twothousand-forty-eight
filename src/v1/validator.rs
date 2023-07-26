@@ -197,7 +197,7 @@ pub fn validate_first_move(history: &Recording) -> bool {
     false
 }
 
-pub fn initialize_board(width: usize, height: usize, seed: usize, add_tiles: usize) -> Board {
+pub fn initialize_board(width: usize, height: usize, seed: u32, add_tiles: usize) -> Board {
     let mut board = Board::new(width, height, seed);
     for _ in 0..add_tiles {
         board.add_random_tile();

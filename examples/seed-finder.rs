@@ -3,7 +3,7 @@ use std::sync::Arc;
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use twothousand_forty_eight::v2::recording::SeededRecording;
 
-fn print_status(seed: usize, failtype: &str, seeds_tried: usize) {
+fn print_status(seed: u32, failtype: &str, seeds_tried: u32) {
     print!(
         "seed {: >20} failed ({}), {:.20}% of all possible (≅{} tried)\r",
         seed,
@@ -15,12 +15,12 @@ fn print_status(seed: usize, failtype: &str, seeds_tried: usize) {
 
 fn main() {
     println!();
-    const LOG_INTERVAL: usize = 10000;
-    let seeds_tried = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    const LOG_INTERVAL: u32 = 10000;
+    let seeds_tried = Arc::new(std::sync::atomic::AtomicU32::new(0));
 
     // Needs to be valid base64
-    let moves_to_seed = "GSc8MSo2PBwNFyAzOgENEwA4ADUhETowOgUrLyk5JT8GPBklLDQKESI/KS8FPAkvLCYwPiIsLScIPxkNAD4QGi4dJR4EBxgTOQgnPi04";
-    let seed = (0..usize::MAX).into_par_iter().find_any(|i| {
+    let moves_to_seed = "GSc8MSo2PBwNFyAzOgENEwA4ADUhETowOgUrLyk5GScaFgovGDEYGRwtMSA2IBkhLSweBxkgBwgGIAQgIAALJTQ3CwcfNzwrJiYTJio9ERspFCkEBAY";
+    let seed = (0..u32::MAX).into_par_iter().find_any(|i| {
         match format!("::2:4:4:{}:{}", i, moves_to_seed).parse::<SeededRecording>() {
             Ok(recording) => {
                 //println!("Seed: {}", i);
