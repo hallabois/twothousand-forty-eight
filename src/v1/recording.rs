@@ -2,6 +2,7 @@
 
 use crate::board::{tile::Tile, Tiles};
 use crate::direction::Direction;
+use crate::unified::hash::Hashable;
 
 use serde::{Deserialize, Serialize};
 
@@ -20,17 +21,17 @@ pub struct Recording {
     pub history: History,
 }
 
-impl Recording {
+impl Hashable for Recording {
     /// Returns a hash of the history. The hash is only composed from the move directions and is not affected by any board data changes.
     /// This is far cheaper and invalid board data or score changes should be catched by the [validator](crate::v1::validator) anyways.
-    pub fn hash_v1(&self) -> String {
+    fn game_hash(&self) -> String {
         use sha2::{Digest, Sha256};
 
         let mut hasher = Sha256::new();
         hasher.update(self.width.to_string().as_bytes());
         hasher.update(self.height.to_string().as_bytes());
         for i in &self.history {
-            hasher.update(i.1.get_index().as_bytes());
+            hasher.update(i.1.get_shorthand().as_bytes());
         }
         format!("{:X}", hasher.finalize())
     }
@@ -59,7 +60,7 @@ impl std::fmt::Display for Recording {
                     + t.value.to_string().as_str()
             }
             out += ";";
-            out += i.1.get_index();
+            out += i.1.get_shorthand();
             if index < self.history.len() - 1 {
                 out += ":";
             }

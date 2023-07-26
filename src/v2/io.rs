@@ -8,7 +8,7 @@ use crate::direction::Direction;
 use super::recording::SeededRecording;
 
 // do NOT change this, it will break all existing seeded recordings
-const SEEDED_RECORDING_SEPARATOR: &str = ":";
+pub(crate) const SEEDED_RECORDING_SEPARATOR: &str = ":";
 
 #[derive(Error, Debug, Clone)]
 pub enum SeededRecordingParseError {
@@ -42,7 +42,7 @@ pub enum SeededRecordingParseError {
 
 /// Converts a string to a [SeededRecording].
 /// Schema:
-///    ::(version):(width):(height):(seed):(moves)
+///    ::(version):(width):(height):(seed):(moves)\n(arbitrary data)
 /// where moves is a base64 encoded string of the moves, each move is represented by a single byte with 5 possible states:
 /// 0: Up
 /// 1: Down
@@ -53,7 +53,9 @@ impl FromStr for SeededRecording {
     type Err = SeededRecordingParseError;
 
     fn from_str(data: &str) -> Result<Self, Self::Err> {
-        let mut split = data.split(SEEDED_RECORDING_SEPARATOR);
+        // We only care about the first line to allow for comments
+        let first_line = data.lines().next().unwrap_or(data);
+        let mut split = first_line.split(SEEDED_RECORDING_SEPARATOR);
         let _reserved_space_start = split
             .next()
             .ok_or(SeededRecordingParseError::MissingReservedSpaceStart)?;
@@ -164,5 +166,29 @@ fn get_b64_engine() -> base64::engine::general_purpose::GeneralPurpose {
 
 #[cfg(test)]
 mod tests {
-    // use crate::recording::SeededRecording;
+    use crate::{
+        unified::hash::Hashable,
+        v2::{recording::SeededRecording, test_data},
+    };
+
+    #[test]
+    fn parse() {
+        let data = test_data::GAME_EBAY;
+        data.parse::<SeededRecording>().unwrap();
+    }
+
+    #[test]
+    fn comments() {
+        let data = test_data::GAME_EBAY_COMMENTED;
+        data.parse::<SeededRecording>().unwrap();
+    }
+
+    #[test]
+    fn comments_hash() {
+        let data = test_data::GAME_EBAY_COMMENTED;
+        assert_eq!(
+            data.parse::<SeededRecording>().unwrap().game_hash(),
+            test_data::GAME_EBAY_HASH
+        );
+    }
 }

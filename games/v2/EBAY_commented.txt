@@ -1,0 +1,14 @@
+::2:4:4:2272633927255241500:GSc8MSo2PBwNFyAzOgENEwA4ADUhETowOgUrLyk5GScaFgovGDEYGRwtMSA2IBkhLSweBxkgBwgGIAQgIAALJTQ3CwcfNzwrJiYTJio9ERspFCkEBAY
+------- STATS -------
+Score: 1984
+RNG state: 1797353334
+Breaks: 2
+Moves: 199
+Allowed moves: [RIGHT, DOWN, LEFT, BREAK]
+------- BOARD -------
+256	64	16	8	
+32	16	2	2	
+16	8	0	0	
+2	0	0	0	
+
+---------------------

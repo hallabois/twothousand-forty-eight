@@ -12,9 +12,10 @@ use ratatui::{
 };
 use std::io::{self, Stdout};
 
-use twothousand_forty_eight::{v2::game::GameState, v2::recording::SeededRecording};
+use twothousand_forty_eight::{unified::game::GameState, v2::recording::SeededRecording};
 struct State {
     gamestate: GameState,
+    history: SeededRecording,
     message: String,
     hiscore: usize,
 }
@@ -22,21 +23,22 @@ impl State {
     pub fn new(message: Option<&str>) -> Self {
         let random_seed = rand::random();
         let history = SeededRecording::empty(random_seed, 4, 4);
-        let gamestate = GameState::try_from(&history).unwrap();
+        let gamestate = GameState::from_reconstructable_ruleset(&history).unwrap();
         Self {
             gamestate,
+            history,
             message: message.unwrap_or_default().to_string(),
             hiscore: 0,
         }
     }
     pub fn save(&self) {
-        let history_string: String = (&self.gamestate.history).into();
+        let history_string: String = (&self.history).into();
         let stats = format!(
-            "------- STATS -------\nScore: {}\nSeed: {}\nBreaks: {:?}\nMoves: {}\nAllowed moves: {:?}\n------- BOARD -------\n{}\n---------------------",
+            "------- STATS -------\nScore: {}\nRNG state: {}\nBreaks: {}\nMoves: {}\nAllowed moves: {:?}\n------- BOARD -------\n{}\n---------------------",
             self.gamestate.score,
             self.gamestate.board.rng_state,
-            self.gamestate.break_positions,
-            self.gamestate.history.moves.len(),
+            self.gamestate.breaks,
+            self.history.moves.len(),
             self.gamestate.allowed_moves,
             self.gamestate.board,
         );
@@ -52,7 +54,7 @@ impl State {
                 return Self::new(Some(&format!("Error parsing history: {:?}", e)));
             }
         };
-        let gamestate = match GameState::try_from(&history) {
+        let gamestate = match GameState::from_reconstructable_ruleset(&history) {
             Ok(gamestate) => gamestate,
             Err(e) => {
                 return Self::new(Some(&format!("Error reconstructing game: {:?}", e)));
@@ -60,6 +62,7 @@ impl State {
         };
         let hiscore = gamestate.score;
         Self {
+            history,
             message: format!("Loaded game from {path}"),
             gamestate,
             hiscore,
@@ -179,14 +182,15 @@ fn move_in_direction(state: &mut State, direction: twothousand_forty_eight::dire
         state.message = format!("Move to direction {:?} not allowed.", direction);
         return;
     }
-    let mut new_history = state.gamestate.history.clone();
+    let mut new_history = state.history.clone();
     new_history.moves.push(direction);
     let history_string: String = (&new_history).into();
     match history_string.parse::<SeededRecording>() {
-        Ok(history) => match GameState::try_from(&history) {
+        Ok(history) => match GameState::from_reconstructable_ruleset(&history) {
             Ok(gamestate) => {
                 state.gamestate = gamestate;
                 state.message = String::new();
+                state.history = history;
                 if state.gamestate.score > state.hiscore {
                     state.hiscore = state.gamestate.score;
                 }
@@ -210,7 +214,6 @@ fn render_app(frame: &mut ratatui::Frame<CrosstermBackend<Stdout>>, state: &Stat
         .margin(2)
         .constraints(
             [
-                Constraint::Length(2),
                 Constraint::Length(1),
                 Constraint::Length(1),
                 Constraint::Length(1),
@@ -224,7 +227,7 @@ fn render_app(frame: &mut ratatui::Frame<CrosstermBackend<Stdout>>, state: &Stat
     let boardchunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Max(23), Constraint::Min(1)].as_ref())
-        .split(chunks[6]);
+        .split(chunks[5]);
 
     let title = Paragraph::new(format!(
         "2048 {}x{}",
@@ -250,11 +253,8 @@ fn render_app(frame: &mut ratatui::Frame<CrosstermBackend<Stdout>>, state: &Stat
     frame.render_widget(hiscore, chunks[2]);
     let seed = Paragraph::new(format!("Seed/State: {}", gamestate.board.rng_state,));
     frame.render_widget(seed, chunks[3]);
-    let validation_data = gamestate.history.validate().unwrap();
-    let info = Paragraph::new(format!("{:?}", validation_data));
-    frame.render_widget(info, chunks[4]);
     let message = Paragraph::new(format!("{}", state.message));
-    frame.render_widget(message, chunks[5]);
+    frame.render_widget(message, chunks[4]);
     let board = Table::new(gamestate.board.tiles.iter().map(|row| {
         Row::new(
             row.iter()

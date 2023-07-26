@@ -12,6 +12,10 @@ pub trait Ruleset {
     fn won(&self, board: &Board) -> bool;
 }
 
+pub trait RulesetProvider {
+    fn rules(&self) -> &dyn Ruleset;
+}
+
 pub fn can_break(rules: &dyn Ruleset, board: &Board, score: usize, breaks: usize) -> bool {
     breaks < rules.break_max(board) && rules.break_cost(board) <= score
 }

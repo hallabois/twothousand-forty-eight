@@ -1,5 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 
+use twothousand_forty_eight::unified::validation::Validatable;
 use twothousand_forty_eight::v1::parser;
 use twothousand_forty_eight::v1::recording::Recording;
 use twothousand_forty_eight::v1::validator;
@@ -25,7 +26,7 @@ fn bvalidate_first_move(history: Recording) {
 }
 
 fn bvalidate_history(history: Recording) {
-    validator::validate_history(history).unwrap();
+    history.validate().unwrap();
 }
 
 fn validate_history(c: &mut Criterion) {

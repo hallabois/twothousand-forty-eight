@@ -15,20 +15,24 @@ documentation = "https://docs.rs/twothousand_forty_eight"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-sha2 = {version = "0.9.8"}
-wasm-bindgen = {version = "0.2.87", optional = true}
-serde = {version = "1.0", features = ["derive"]}
-serde_json = {version = "1.0"}
+sha2 = { version = "0.9.8" }
+wasm-bindgen = { version = "0.2.87", optional = true }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0" }
 thiserror = "1.0"
-base64 = {version = "0.21.2", optional = true}
-convert-base = {version="1.1.2", optional = true}
+base64 = "0.21.2"
+convert-base = "1.1.2"
+wasm-bindgen-futures = "0.4.37"
+serde-wasm-bindgen = "0.5.0"
+rand = "0.8.5"
+anyhow = "1.0"
 
 [dev-dependencies]
-criterion = { version = "0.5", features = ["html_reports"] } # Used for benchmarking
-ratatui = { version = "0.21.0", features = ["all-widgets"]}
+# Used for benchmarking
+criterion = { version = "0.5", features = ["html_reports"] }
+ratatui = { version = "0.21.0", features = ["all-widgets"] }
 anyhow = "1.0"
 crossterm = "0.26.1"
-rand = "0.8.5"
 rayon = "1.7.0"
 
 [[bench]]
@@ -50,6 +54,5 @@ opt-level = 3 # All optimizations
 
 [features]
 default = ["all"]
-all = ["v2", "wasm"]
+all = ["wasm"]
 wasm = ["wasm-bindgen"]
-v2 = ["base64", "convert-base"]

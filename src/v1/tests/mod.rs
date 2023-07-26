@@ -164,6 +164,8 @@ mod validator {
 
     use super::lib_testgames;
     use crate::board::Board;
+    use crate::unified::reconstruction::Reconstructable;
+    use crate::unified::validation::Validatable;
     use crate::v1::parser;
     use crate::v1::validator;
 
@@ -180,7 +182,7 @@ mod validator {
     fn history_reconstruction() {
         use lib_testgames::GAME4X4;
         let recording = parser::parse_data(GAME4X4).unwrap();
-        let reconstruction = validator::reconstruct_history(&recording).unwrap();
+        let reconstruction = recording.reconstruct().unwrap();
         let history = recording.history;
 
         assert_eq!(history.len(), reconstruction.history.len());
@@ -217,7 +219,7 @@ mod validator {
         let history = parser::parse_data(GAME4X4B).unwrap();
         let first_move_valid = validator::validate_first_move(&history);
         assert!(first_move_valid);
-        let result = validator::validate_history(history).unwrap();
+        let result = history.validate().unwrap();
         assert_score(result.score, 2788, result.score_margin);
         assert_eq!(result.breaks, 0);
     }
@@ -227,7 +229,7 @@ mod validator {
         let history = parser::parse_data(GAME4X4C).unwrap();
         let first_move_valid = validator::validate_first_move(&history);
         assert!(first_move_valid);
-        let result = validator::validate_history(history).unwrap();
+        let result = history.validate().unwrap();
         assert_score(result.score, 2624, result.score_margin);
         assert_eq!(result.breaks, 0);
     }
@@ -237,7 +239,7 @@ mod validator {
         let history = parser::parse_data(GAME4X4).unwrap();
         let first_move_valid = validator::validate_first_move(&history);
         assert!(first_move_valid);
-        let result = validator::validate_history(history).unwrap();
+        let result = history.validate().unwrap();
         assert_score(result.score, 6048, result.score_margin);
         assert_eq!(result.breaks, 2);
     }
@@ -247,7 +249,7 @@ mod validator {
         let history = parser::parse_data(GAME3X3).unwrap();
         let first_move_valid = validator::validate_first_move(&history);
         assert!(first_move_valid);
-        let result = validator::validate_history(history).unwrap();
+        let result = history.validate().unwrap();
         assert_score(result.score, 14220, result.score_margin);
         assert_eq!(result.breaks, 0);
     }
@@ -257,7 +259,7 @@ mod validator {
         let history = parser::parse_data(GAME3X3B).unwrap();
         let first_move_valid = validator::validate_first_move(&history);
         assert!(first_move_valid);
-        let result = validator::validate_history(history).unwrap();
+        let result = history.validate().unwrap();
         assert_score(result.score, 208, result.score_margin);
         assert_eq!(result.breaks, 0);
     }
@@ -267,7 +269,7 @@ mod validator {
         let history = parser::parse_data(GAMEOBSCENE).unwrap();
         let first_move_valid = validator::validate_first_move(&history);
         assert!(first_move_valid);
-        let result = validator::validate_history(history).unwrap();
+        let result = history.validate().unwrap();
         assert_score(result.score, 200028, result.score_margin);
         assert_eq!(result.breaks, 0);
     }
@@ -283,8 +285,7 @@ mod validator {
             let history = parser::parse_data(game).unwrap();
             let first_move_valid = validator::validate_first_move(&history);
             assert!(first_move_valid);
-            let result = validator::validate_history(history).unwrap();
-            assert!(result.valid);
+            history.validate().unwrap();
         });
     }
 }
@@ -313,14 +314,14 @@ mod serializers {
 #[cfg(test)]
 mod history_hash {
     use super::lib_testgames;
-    use crate::v1::parser;
+    use crate::{unified::hash::Hashable, v1::parser};
 
     #[test]
     fn history_hash_works() {
         use lib_testgames::GAME4X4;
         let history = parser::parse_data(GAME4X4).unwrap();
         assert_eq!(
-            history.hash_v1(),
+            history.game_hash(),
             String::from("9CAC2643E4E5F66E18FD9150320471F016CAF69FA3865A6DAE1DD9726F6792F5")
         );
     }

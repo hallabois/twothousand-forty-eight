@@ -67,8 +67,8 @@ impl Direction {
         }
     }
 
-    /// Get the index of the direction in the order: up, right, down, left
-    pub fn get_index(&self) -> &str {
+    /// Get the shorthand of the direction
+    pub fn get_shorthand(&self) -> &str {
         match self {
             Self::UP => "0",
             Self::RIGHT => "1",
@@ -77,6 +77,19 @@ impl Direction {
             Self::END => "e",
             Self::START => "s",
             Self::BREAK => "b",
+        }
+    }
+
+    /// Get the index of the direction in the order: up, right, down, left
+    pub fn get_index(&self) -> usize {
+        match self {
+            Self::UP => 0,
+            Self::RIGHT => 1,
+            Self::DOWN => 2,
+            Self::LEFT => 3,
+            Self::END => 4,
+            Self::START => 5,
+            Self::BREAK => 6,
         }
     }
 

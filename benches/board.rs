@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 
-use twothousand_forty_eight::{add_random_to_board, board};
+use twothousand_forty_eight::board;
 
 fn bench_function(c: &mut Criterion, id: &str, f: Box<dyn Fn(&mut criterion::Bencher)>) {
     let mut group = c.benchmark_group("board");
@@ -16,8 +16,8 @@ fn check_move_two(c: &mut Criterion) {
         Box::new(|bencher| {
             bencher.iter(|| {
                 let mut game = board::Board::default();
-                add_random_to_board(&mut game);
-                add_random_to_board(&mut game);
+                game.add_random_tile();
+                game.add_random_tile();
                 let _ = board::check_move(game, twothousand_forty_eight::direction::Direction::UP);
                 let _ =
                     board::check_move(game, twothousand_forty_eight::direction::Direction::RIGHT);
@@ -37,10 +37,10 @@ fn check_move_four(c: &mut Criterion) {
         Box::new(|bencher| {
             bencher.iter(|| {
                 let mut game = board::Board::default();
-                add_random_to_board(&mut game);
-                add_random_to_board(&mut game);
-                add_random_to_board(&mut game);
-                add_random_to_board(&mut game);
+                game.add_random_tile();
+                game.add_random_tile();
+                game.add_random_tile();
+                game.add_random_tile();
                 let _ = board::check_move(game, twothousand_forty_eight::direction::Direction::UP);
                 let _ =
                     board::check_move(game, twothousand_forty_eight::direction::Direction::RIGHT);

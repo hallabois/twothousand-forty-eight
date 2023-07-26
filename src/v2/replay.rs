@@ -2,66 +2,15 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use super::recording::SeededRecording;
+use crate::rules::RulesetProvider;
+use crate::unified::reconstruction::{HistoryReconstruction, Reconstructable};
+use crate::unified::validation::{ValidationResult, MAX_ALLOWED_BREAKS};
 use crate::{
-    add_random_to_board,
-    board::{check_move, Board, MoveError},
-    direction::{self, Direction},
-    rules::{self, Ruleset},
-    v1::validator::{initialize_board, HistoryReconstruction, ValidationData, MAX_ALLOWED_BREAKS},
+    board::{Board, MoveError},
+    direction::Direction,
+    rules::Ruleset,
+    v1::validator::initialize_board,
 };
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct GameState {
-    pub board: Board,
-    pub score: usize,
-    pub breaks: usize,
-    pub break_positions: [Option<usize>; MAX_ALLOWED_BREAKS],
-    pub allowed_moves: Vec<Direction>,
-    pub over: bool,
-    pub won: bool,
-    pub history: SeededRecording,
-}
-
-impl TryFrom<&SeededRecording> for GameState {
-    type Error = MoveReplayError;
-
-    fn try_from(history: &SeededRecording) -> Result<Self, Self::Error> {
-        let rules = history.get_ruleset();
-        let replay = replay_moves(history, rules.as_ref())?;
-
-        let score = replay.validation_data.score;
-        let breaks = replay.validation_data.breaks;
-        let break_positions = replay.validation_data.break_positions;
-        let board = match replay.history.last() {
-            Some(board) => *board,
-            None => initialize_board(history.width, history.height, history.seed, 2),
-        };
-
-        let mut allowed_moves = vec![];
-        for direction in direction::MOVE_DIRECTIONS {
-            if check_move(board, direction).is_ok() {
-                allowed_moves.push(direction);
-            }
-        }
-        let allowed_to_break = rules::can_break(rules.as_ref(), &board, score, breaks);
-        if allowed_to_break {
-            allowed_moves.push(Direction::BREAK);
-        }
-
-        let over = allowed_moves.is_empty();
-        let won = rules.won(&board);
-        Ok(GameState {
-            board,
-            score,
-            breaks,
-            break_positions,
-            allowed_moves,
-            over,
-            won,
-            history: history.clone(),
-        })
-    }
-}
 
 #[derive(Error, Debug, Clone, Serialize, Deserialize)]
 pub enum MoveReplayError {
@@ -76,22 +25,20 @@ pub enum MoveReplayError {
 }
 
 /// Intended for reconstructing V2 format games
-pub fn replay_moves(
-    input: &SeededRecording,
-    rules: &dyn Ruleset,
-) -> Result<HistoryReconstruction, MoveReplayError> {
+pub fn replay_moves(recording: &SeededRecording) -> Result<HistoryReconstruction, MoveReplayError> {
+    let rules = recording.rules();
     let mut score: usize = 0;
     let mut max_score: usize = 0;
 
-    let mut board = initialize_board(input.width, input.height, input.seed, 2);
+    let mut board = initialize_board(recording.width, recording.height, recording.seed, 2);
     let mut history_out: Vec<Board> = vec![board];
 
     let mut breaks: usize = 0;
     let mut break_positions = [None; MAX_ALLOWED_BREAKS];
 
-    for (move_index, mv) in input.moves.iter().copied().enumerate() {
+    for (move_index, mv) in recording.moves.iter().copied().enumerate() {
         if mv != Direction::BREAK {
-            let mvchk = check_move(board, mv)
+            let mvchk = crate::board::check_move(board, mv)
                 .map_err(|e| MoveReplayError::InvalidMove(mv, move_index, e))?;
             board = mvchk.board;
             score += mvchk.score_gain;
@@ -116,13 +63,12 @@ pub fn replay_moves(
         }
 
         max_score = usize::max(score, max_score);
-        add_random_to_board(&mut board);
+        board.add_random_tile();
         history_out.push(board);
     }
 
     Ok(HistoryReconstruction {
-        validation_data: ValidationData {
-            valid: true,
+        validation_data: ValidationResult {
             score: max_score,
             score_end: score,
             score_margin: 0,
@@ -134,7 +80,7 @@ pub fn replay_moves(
 }
 
 fn actuate_break(board: &mut Board, rules: &dyn Ruleset) {
-    let tile_threshold = rules.break_tile_threshold(&board);
+    let tile_threshold = rules.break_tile_threshold(board);
     // remove all tiles with value < tile_threshold
     board.tiles = board.tiles.map(|c| {
         c.map(|t| {
@@ -147,4 +93,11 @@ fn actuate_break(board: &mut Board, rules: &dyn Ruleset) {
             })
         })
     });
+}
+
+impl Reconstructable for SeededRecording {
+    type ReconstructionError = MoveReplayError;
+    fn reconstruct(&self) -> Result<HistoryReconstruction, Self::ReconstructionError> {
+        replay_moves(self)
+    }
 }

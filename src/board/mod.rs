@@ -151,6 +151,30 @@ impl Board {
         false
     }
 
+    pub fn get_random_tile_to_add(&mut self) -> Option<tile::Tile> {
+        use crate::random::Pickable;
+
+        let possible = self.get_non_occupied_tiles();
+        if !possible.is_empty() {
+            let t = possible.pick_lcg(&mut self.rng_state);
+
+            let value = tile::Tile::random_value(&mut self.rng_state);
+
+            return Some(tile::Tile::new(t.x, t.y, value, tile::InitialID::Id(t.id)));
+        }
+        None
+    }
+
+    pub fn add_random_tile(&mut self) {
+        let possible_t = self.get_random_tile_to_add();
+        match possible_t {
+            None => {}
+            Some(t) => {
+                self.set_tile(t.x, t.y, t.value);
+            }
+        }
+    }
+
     /// Move the board in the direction "dir" and return the score gained from the move
     pub fn move_in_direction(&mut self, dir: Direction) -> Result<usize, MoveError> {
         let result = check_move(*self, dir);
@@ -161,10 +185,10 @@ impl Board {
     }
 }
 
-/// Initialize a new 4x4 board with [Board::new]
+/// Initialize a new 4x4 board with [Board::new] and a random seed
 impl Default for Board {
     fn default() -> Board {
-        Board::new(4, 4, 0)
+        Board::new(4, 4, rand::random::<usize>())
     }
 }
 
@@ -466,7 +490,7 @@ pub fn check_move(board: Board, dir: Direction) -> Result<MoveResult, MoveError>
 mod tests {
     use std::collections::HashSet;
 
-    use crate::{add_random_to_board, direction, random::Pickable};
+    use crate::{direction, random::Pickable};
 
     use super::*;
     fn ensure_no_same_ids(board: &Board) {
@@ -498,14 +522,14 @@ mod tests {
     #[test]
     fn no_equal_ids_on_play() {
         let mut board = Board::default();
-        add_random_to_board(&mut board);
-        add_random_to_board(&mut board);
+        board.add_random_tile();
+        board.add_random_tile();
         ensure_no_same_ids(&board);
         for i in 0..500 {
             let mut fake_seed = i;
             let dir = direction::MOVE_DIRECTIONS.pick_lcg(&mut fake_seed);
             if board.move_in_direction(*dir).is_ok() {
-                add_random_to_board(&mut board);
+                board.add_random_tile();
             }
             ensure_no_same_ids(&board);
         }

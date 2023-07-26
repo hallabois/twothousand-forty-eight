@@ -1,11 +1,15 @@
 use serde::{Deserialize, Serialize};
 
-use super::game::{replay_moves, MoveReplayError};
+use super::replay::MoveReplayError;
 use crate::{
     board::MoveError,
     direction::Direction,
-    rules::{ClassicV1, ClassicV2, Ruleset},
-    v1::validator::{HistoryReconstruction, ValidationData},
+    rules::{ClassicV1, ClassicV2, Ruleset, RulesetProvider},
+    unified::{
+        hash::Hashable,
+        reconstruction::Reconstructable,
+        validation::{Validatable, ValidationResult},
+    },
 };
 
 /// Represents a seeded recording of a played game of 2048.
@@ -47,26 +51,56 @@ impl SeededRecording {
         Self::new(seed, width, height, vec![])
     }
 
-    pub fn reconstruct(&self) -> Result<HistoryReconstruction, MoveReplayError> {
-        replay_moves(self, &*self.get_ruleset())
-    }
-
     pub fn get_current_board(&self) -> Result<crate::board::Board, MoveReplayError> {
         let reconstruction = self.reconstruct()?;
         // We can unwrap here, replay_moves should always return a valid board
         Ok(*reconstruction.history.last().unwrap())
     }
+}
 
-    pub fn validate(&self) -> Result<ValidationData, MoveReplayError> {
+impl Validatable for SeededRecording {
+    type Error = MoveReplayError;
+    fn validate(&self) -> Result<ValidationResult, Self::Error> {
         let reconstruction = self.reconstruct()?;
         Ok(reconstruction.validation_data)
     }
+}
 
-    pub fn get_ruleset(&self) -> Box<dyn Ruleset> {
+impl RulesetProvider for SeededRecording {
+    fn rules(&self) -> &dyn Ruleset {
         match self.version {
-            1 => Box::new(ClassicV1),
-            2 => Box::new(ClassicV2),
-            _ => Box::new(ClassicV2), // we should probably panic here
+            1 => &ClassicV1,
+            2 => &ClassicV2,
+            _ => &ClassicV2, // we should probably panic here
         }
+    }
+}
+
+impl Hashable for SeededRecording {
+    fn game_hash(&self) -> String {
+        use sha2::{Digest, Sha256};
+
+        let mut hasher = Sha256::new();
+        hasher.update(self.version.to_string().as_bytes());
+        hasher.update(self.seed.to_string().as_bytes());
+        hasher.update(self.width.to_string().as_bytes());
+        hasher.update(self.height.to_string().as_bytes());
+        for i in &self.moves {
+            hasher.update(i.get_index().to_string().as_bytes());
+        }
+        format!("V2{:X}", hasher.finalize())
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use crate::{unified::hash::Hashable, v2::test_data::GAME_EBAY_HASH};
+
+    use super::SeededRecording;
+
+    #[test]
+    fn hash() {
+        let parsed: SeededRecording = crate::v2::test_data::GAME_EBAY.parse().unwrap();
+        assert_eq!(parsed.game_hash(), GAME_EBAY_HASH);
     }
 }
