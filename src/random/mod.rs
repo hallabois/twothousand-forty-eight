@@ -15,12 +15,7 @@ pub fn linear_congruential_generator(m: u32, a: u32, c: u32, seed: &mut u32) -> 
 }
 
 pub fn lcg_sane(seed: &mut u32) -> u32 {
-    linear_congruential_generator(
-        2147483647, // 2^31 - 1
-        1103515245, // 2^31 - 1
-        12345,      // 2^31 - 1
-        seed,
-    )
+    linear_congruential_generator(2147483647, 1103515245, 12345, seed)
 }
 
 pub trait Pickable<T> {

@@ -9,6 +9,9 @@ use crate::{
 use super::reconstruction::Reconstructable;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg(feature = "wasm")]
+#[derive(tsify::Tsify)]
+#[cfg_attr(feature = "wasm", tsify(into_wasm_abi, from_wasm_abi))]
 pub struct GameState {
     pub board: Board,
     pub score: usize,

@@ -7,7 +7,10 @@ use wasm_bindgen::prelude::*;
 
 use crate::{
     board::Board,
+    direction::Direction,
     unified::{reconstruction::HistoryReconstruction, validation::ValidationResult, ParseResult},
+    v1::{recording::Recording, validator::initialize_board},
+    v2::recording::SeededRecording,
     *,
 };
 
@@ -21,7 +24,7 @@ pub fn parse(data: &str) -> Result<ParseResult, JsValue> {
 }
 
 #[wasm_bindgen]
-pub fn get_frames(data: &str) -> Result<HistoryReconstruction, JsValue> {
+pub fn reconstruct(data: &str) -> Result<HistoryReconstruction, JsValue> {
     unified::reconstruct(data).map_err(err_str)
 }
 
@@ -29,31 +32,66 @@ pub fn get_frames(data: &str) -> Result<HistoryReconstruction, JsValue> {
 pub fn validate(data: &str) -> Result<ValidationResult, JsValue> {
     unified::validate(data).map_err(err_str)
 }
-/*
-#[wasm_bindgen]
-pub fn validate_all_frames(data: &str) -> String {
-    let frames_src = data.split(':').collect::<Vec<&str>>();
-    let frame_count = frames_src.clone().len();
-    println!("found {} frames", frame_count);
-    let mut validation_results: Vec<
-        Option<Result<v1::validator::ValidationData, v1::validator::ValidationError>>,
-    > = vec![];
 
-    for frame in 0..frame_count {
-        let section = frames_src[0..frame].join(":");
-        match v1::parser::parse_data(&section) {
-            Ok(parsed) => {
-                let history_valid = v1::validator::validate_history(parsed);
-                validation_results.push(Some(history_valid));
-            }
-            Err(_) => {
-                validation_results.push(None);
-            }
-        }
-    }
-    serde_json::to_string(&validation_results).unwrap()
+#[tsify::declare]
+type ValidationResultOrError = Result<ValidationResult, String>;
+
+#[tsify::declare]
+type CompleteValidationResult = Result<Vec<ValidationResultOrError>, String>;
+
+#[wasm_bindgen]
+pub fn validate_all(data: &str) -> String {
+    let result: CompleteValidationResult =
+        unified::parse(data)
+            .map_err(|e| e.to_string())
+            .map(|parsed| {
+                let mut results = Vec::new();
+                match parsed {
+                    ParseResult::V1(rec) => {
+                        let mut moves_until_now = Vec::new();
+                        for frame in rec.history {
+                            let history_until_now = Recording {
+                                width: rec.width,
+                                height: rec.height,
+                                history: moves_until_now.clone(),
+                            };
+                            results.push(
+                                match unified::validate(&format!("{}", history_until_now)) {
+                                    Ok(result) => ValidationResultOrError::Ok(result),
+                                    Err(e) => ValidationResultOrError::Err(e.to_string()),
+                                },
+                            );
+                            moves_until_now.push(frame);
+                        }
+                    }
+                    ParseResult::V2(sedrec) => {
+                        let mut moves_until_now = Vec::new();
+                        for frame in sedrec.moves {
+                            let history_until_now = SeededRecording {
+                                version: sedrec.version,
+                                width: sedrec.width,
+                                height: sedrec.height,
+                                seed: sedrec.seed,
+                                moves: moves_until_now.clone(),
+                            };
+                            results.push(
+                                match unified::validate(&String::from(&history_until_now)) {
+                                    Ok(result) => ValidationResultOrError::Ok(result),
+                                    Err(e) => ValidationResultOrError::Err(e.to_string()),
+                                },
+                            );
+                            moves_until_now.push(frame);
+                        }
+                    }
+                }
+                results.push(match unified::validate(data) {
+                    Ok(result) => ValidationResultOrError::Ok(result),
+                    Err(e) => ValidationResultOrError::Err(e.to_string()),
+                });
+                results
+            });
+    serde_json::to_string(&result).unwrap()
 }
-*/
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[cfg(feature = "wasm")]
@@ -65,9 +103,14 @@ pub struct MoveResult {
 }
 
 #[wasm_bindgen]
-pub fn apply_move(board_data: &str, dir: usize, add_random: bool) -> Result<MoveResult, JsValue> {
-    let mut board: Board = serde_json::from_str(board_data).map_err(err_str)?;
-    let result = board.move_in_direction(direction::Direction::from_index(dir));
+pub fn initial_board(size: usize, seed: u32, add_tiles: usize) -> Board {
+    initialize_board(size, size, seed, add_tiles)
+}
+
+#[wasm_bindgen]
+pub fn apply_move(board: Board, dir: Direction, add_random: bool) -> Result<MoveResult, JsValue> {
+    let mut board: Board = board;
+    let result = board.move_in_direction(dir);
     if result.is_ok() && add_random {
         board.add_random_tile();
     }
@@ -86,4 +129,11 @@ pub fn add_random(board: Board) -> Board {
 #[wasm_bindgen]
 pub fn hash(data: &str) -> Result<String, JsValue> {
     unified::hash(data).map_err(err_str)
+}
+
+#[wasm_bindgen]
+pub fn lcg_sane(seed: u32) -> u32 {
+    let mut seed = seed;
+    random::lcg_sane(&mut seed);
+    seed
 }
