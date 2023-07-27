@@ -8,7 +8,10 @@ use wasm_bindgen::prelude::*;
 use crate::{
     board::Board,
     direction::Direction,
-    unified::{reconstruction::HistoryReconstruction, validation::ValidationResult, ParseResult},
+    unified::{
+        game::GameState, reconstruction::HistoryReconstruction, validation::ValidationResult,
+        ParseResult,
+    },
     v1::{recording::Recording, validator::initialize_board},
     v2::recording::SeededRecording,
     *,
@@ -19,8 +22,16 @@ fn err_str(e: impl std::fmt::Display) -> JsValue {
 }
 
 #[wasm_bindgen]
-pub fn parse(data: &str) -> Result<ParseResult, JsValue> {
+pub fn deserialize(data: &str) -> Result<ParseResult, JsValue> {
     unified::parse(data).map_err(err_str)
+}
+
+#[wasm_bindgen]
+pub fn serialize(data: ParseResult) -> Result<String, JsValue> {
+    match data {
+        ParseResult::V1(rec) => Ok(format!("{}", rec)),
+        ParseResult::V2(sedrec) => Ok(String::from(&sedrec)),
+    }
 }
 
 #[wasm_bindgen]
@@ -105,6 +116,17 @@ pub struct MoveResult {
 #[wasm_bindgen]
 pub fn initial_board(size: usize, seed: u32, add_tiles: usize) -> Board {
     initialize_board(size, size, seed, add_tiles)
+}
+
+#[wasm_bindgen]
+pub fn new_game(size: usize, seed: Option<u32>) -> String {
+    let seed = seed.unwrap_or_else(|| rand::random());
+    String::from(&SeededRecording::empty(seed, size, size))
+}
+
+#[wasm_bindgen]
+pub fn get_gamestate(data: &str) -> Result<GameState, JsValue> {
+    unified::get_gamestate(data).map_err(err_str)
 }
 
 #[wasm_bindgen]

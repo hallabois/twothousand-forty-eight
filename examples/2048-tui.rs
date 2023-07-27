@@ -34,12 +34,14 @@ impl State {
     pub fn save(&self) {
         let history_string: String = (&self.history).into();
         let stats = format!(
-            "------- STATS -------\nScore: {}\nRNG state: {}\nBreaks: {}\nMoves: {}\nAllowed moves: {:?}\n------- BOARD -------\n{}\n---------------------",
+            "------- STATS -------\nScore: {}\nRNG state: {}\nBreaks: {}\nMoves: {}\nAllowed moves: {:?}\nOver: {}\nWon: {}\n------- BOARD -------\n{}\n---------------------",
             self.gamestate.score,
             self.gamestate.board.rng_state,
             self.gamestate.breaks,
             self.history.moves.len(),
             self.gamestate.allowed_moves,
+            self.gamestate.over,
+            self.gamestate.won,
             self.gamestate.board,
         );
         std::fs::write("savegame.txt", format!("{history_string}\n{stats}")).unwrap();

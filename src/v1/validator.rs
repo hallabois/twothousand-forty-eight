@@ -119,8 +119,8 @@ impl Reconstructable for Recording {
                 } else {
                     // Invalid move
                     println!(
-                        "Went wrong at index {} (move to {:?}): \n{:?}\n{:?}",
-                        ind, dir, predicted_board, board_next
+                        "Went wrong at index {} (move to {:?}, add {:?}): \n{:?}\n{:?}",
+                        ind, dir, addition, predicted_board, board_next
                     );
                     if ind > 0 {
                         println!("Last board:");

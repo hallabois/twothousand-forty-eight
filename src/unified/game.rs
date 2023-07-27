@@ -35,12 +35,12 @@ impl GameState {
                 allowed_moves.push(direction);
             }
         }
+        let over = allowed_moves.is_empty();
         let allowed_to_break = crate::rules::can_break(rules, &board, score, breaks);
         if allowed_to_break {
             allowed_moves.push(Direction::BREAK);
         }
 
-        let over = allowed_moves.is_empty();
         let won = rules.won(&board);
         Ok(Self {
             board,

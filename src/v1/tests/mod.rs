@@ -134,8 +134,7 @@ mod parser {
     fn works_all_real() {
         use lib_testgames::GAMELIST;
         let games: Vec<&str> = GAMELIST.lines().collect();
-        games.iter().enumerate().for_each(|(i, game)| {
-            println!("parsing game {} / {}", i, games.len());
+        games.par_iter().enumerate().for_each(|(_, game)| {
             let history = parser::parse_data(game).unwrap();
             assert!(history.width > 0);
             assert!(history.height > 0);
@@ -148,8 +147,7 @@ mod parser {
     fn produces_coherrent_ids_all() {
         use lib_testgames::GAMELIST;
         let games: Vec<&str> = GAMELIST.lines().collect();
-        games.par_iter().enumerate().for_each(|(i, game)| {
-            println!("parsing game {} / {}", i, games.len());
+        games.par_iter().enumerate().for_each(|(_, game)| {
             let history = parser::parse_data(game).unwrap();
             check_history_ids(history);
         });
@@ -280,8 +278,7 @@ mod validator {
     fn works_all_real() {
         use lib_testgames::GAMELIST;
         let games: Vec<&str> = GAMELIST.lines().collect();
-        games.par_iter().enumerate().for_each(|(i, game)| {
-            println!("parsing game {} / {}", i, games.len());
+        games.par_iter().enumerate().for_each(|(_, game)| {
             let history = parser::parse_data(game).unwrap();
             let first_move_valid = validator::validate_first_move(&history);
             assert!(first_move_valid);
@@ -306,7 +303,7 @@ mod serializers {
 
         assert_eq!(
             t.to_json(),
-            "{\"x\":0,\"y\":1,\"value\":4,\"id\":0,\"merged_from\":null}"
+            "{\"x\":0,\"y\":1,\"value\":4,\"id\":0,\"merged_from\":null,\"new\":true}"
         );
     }
 }

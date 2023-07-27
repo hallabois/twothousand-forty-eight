@@ -66,7 +66,7 @@ pub fn parse_data(data: &str) -> Result<Recording, ParseError> {
     let mut height = 4;
     let mut historypart = data;
     let parts: Vec<&str> = data.split('S').collect();
-    let mut rng_state = 0;
+    let mut id_counter = 0;
     if parts.len() > 1 {
         historypart = parts.get(1).ok_or(ParseError::MissingHistory)?;
         let dimensions = parts[0].split('x').collect::<Vec<&str>>();
@@ -91,7 +91,7 @@ pub fn parse_data(data: &str) -> Result<Recording, ParseError> {
         let b = *bdata
             .first()
             .ok_or(ParseError::MissingBoard(history_index))?;
-        let mut tiles = initialize_tiles(width, height, &mut rng_state);
+        let mut tiles = initialize_tiles(width, height, &mut id_counter);
         let dir = parts
             .get(1)
             .ok_or(ParseError::MissingDirection(history_index))?;
@@ -106,7 +106,7 @@ pub fn parse_data(data: &str) -> Result<Recording, ParseError> {
                 x,
                 y,
                 val,
-                board::tile::InitialID::AutoAssign(&mut rng_state),
+                board::tile::InitialID::AutoAssign(&mut id_counter),
             ));
         }
 
@@ -136,7 +136,7 @@ pub fn parse_data(data: &str) -> Result<Recording, ParseError> {
                 added_x,
                 added_y,
                 added_value,
-                board::tile::InitialID::AutoAssign(&mut rng_state),
+                board::tile::InitialID::AutoAssign(&mut id_counter),
             ));
         }
 

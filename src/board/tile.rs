@@ -24,6 +24,8 @@ pub struct Tile {
     pub id: usize,
 
     pub merged_from: Option<[usize; 2]>,
+
+    pub new: bool,
 }
 
 pub enum InitialID<'a> {
@@ -53,6 +55,7 @@ impl Tile {
             value,
             id: Self::get_id(id),
             merged_from: None,
+            new: true,
         }
     }
 

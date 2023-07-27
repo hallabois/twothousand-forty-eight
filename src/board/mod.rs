@@ -212,7 +212,7 @@ impl From<(Tiles, u32)> for Board {
             height,
             tiles,
             rng_state,
-            id_counter: largest_id,
+            id_counter: largest_id + 1,
         }
     }
 }
@@ -400,10 +400,11 @@ pub fn check_move(board: Board, dir: Direction) -> Result<MoveResult, MoveError>
 
     let mut was_changed = false;
 
-    // Copy the current board and unset merged_from
+    // Copy the current board and unset merged_from and new
     for t in board.get_occupied_tiles() {
         board.tiles[t.y][t.x] = Some(Tile {
             merged_from: None,
+            new: false,
             ..t
         });
     }
