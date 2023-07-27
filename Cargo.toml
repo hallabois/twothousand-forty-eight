@@ -8,6 +8,7 @@ keywords = ["2048", "game"]
 description = "a basic engine and move validator for the game 2048"
 repository = "https://github.com/hallabois/twothousand-forty-eight"
 documentation = "https://docs.rs/twothousand_forty_eight"
+exclude = ["/games"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
