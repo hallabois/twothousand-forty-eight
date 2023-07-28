@@ -42,6 +42,7 @@ pub fn replay_moves(recording: &SeededRecording) -> Result<HistoryReconstruction
                 .map_err(|e| MoveReplayError::InvalidMove(mv, move_index, e))?;
             board = mvchk.board;
             score += mvchk.score_gain;
+            board.add_random_tile();
         } else {
             // check if a break is allowed
             let max_breaks = rules.break_max(&board);
@@ -56,6 +57,13 @@ pub fn replay_moves(recording: &SeededRecording) -> Result<HistoryReconstruction
                     move_index, score, cost,
                 ));
             }
+            if rules.game_over(&board) {
+                return Err(MoveReplayError::InvalidMove(
+                    mv,
+                    move_index,
+                    MoveError::NoValidMovesLeft,
+                ));
+            }
             score -= cost;
             break_positions[breaks] = Some(move_index);
             actuate_break(&mut board, rules);
@@ -63,7 +71,6 @@ pub fn replay_moves(recording: &SeededRecording) -> Result<HistoryReconstruction
         }
 
         max_score = usize::max(score, max_score);
-        board.add_random_tile();
         history_out.push(board);
     }
 
@@ -99,5 +106,52 @@ impl Reconstructable for SeededRecording {
     type ReconstructionError = MoveReplayError;
     fn reconstruct(&self) -> Result<HistoryReconstruction, Self::ReconstructionError> {
         replay_moves(self)
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use crate::{
+        unified::game::GameState,
+        v2::{
+            recording::SeededRecording,
+            test_data::{GAME_INVALID_BREAK_AFTER_LOSS, GAME_NI4FIRM, GAME_WON_3_BREAKS},
+        },
+    };
+
+    #[test]
+    fn correctness_a() {
+        let rec: SeededRecording = GAME_NI4FIRM.parse().unwrap();
+        let state = GameState::from_reconstructable_ruleset(&rec).unwrap();
+        assert_eq!(state.board.width, 4);
+        assert_eq!(state.board.height, 4);
+        assert_eq!(state.score_current, 604);
+        assert_eq!(state.score_max, 604);
+        assert_eq!(state.breaks, 0);
+        assert_eq!(state.won, false);
+        assert_eq!(state.over, true);
+    }
+
+    #[test]
+    fn correctness_b() {
+        let rec: SeededRecording = GAME_WON_3_BREAKS.parse().unwrap();
+        let state = GameState::from_reconstructable_ruleset(&rec).unwrap();
+        assert_eq!(state.board.width, 4);
+        assert_eq!(state.board.height, 4);
+        assert_eq!(state.score_current, 16768);
+        assert_eq!(state.score_max, 16768);
+        assert_eq!(state.breaks, 3);
+        assert_eq!(state.won, true);
+        assert_eq!(state.over, false);
+    }
+
+    #[test]
+    #[should_panic]
+    fn correctness_c() {
+        let rec: SeededRecording = GAME_INVALID_BREAK_AFTER_LOSS.parse().unwrap();
+        let state = GameState::from_reconstructable_ruleset(&rec).unwrap();
+
+        // not a valid run, should've panicked by now
+        println!("{:?}", state);
     }
 }

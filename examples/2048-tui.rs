@@ -156,6 +156,9 @@ fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>, mut gamestate: State) 
                         twothousand_forty_eight::direction::Direction::DOWN,
                     );
                 }
+                KeyCode::Char('e') => {
+                    revert_move(&mut gamestate);
+                }
                 KeyCode::Char('r') => {
                     let hiscore = gamestate.hiscore;
                     gamestate = State::new(None);
@@ -182,7 +185,7 @@ fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>, mut gamestate: State) 
 fn move_in_direction(state: &mut State, direction: twothousand_forty_eight::direction::Direction) {
     if !state.gamestate.allowed_moves.contains(&direction) {
         state.message = format!("Move to direction {:?} not allowed.", direction);
-        return;
+        //return;
     }
     let mut new_history = state.history.clone();
     new_history.moves.push(direction);
@@ -196,6 +199,34 @@ fn move_in_direction(state: &mut State, direction: twothousand_forty_eight::dire
                 if state.gamestate.score_max > state.hiscore {
                     state.hiscore = state.gamestate.score_max;
                 }
+            }
+            Err(e) => {
+                state.message = format!("{:?}", e);
+            }
+        },
+        Err(e) => {
+            state.message = format!("{:?}", e);
+        }
+    }
+}
+fn revert_move(state: &mut State) {
+    if state.history.moves.is_empty() {
+        state.message = "No moves to revert.".to_string();
+        return;
+    }
+    let mut new_history = state.history.clone();
+    new_history.moves.pop();
+    let history_string: String = (&new_history).into();
+    match history_string.parse::<SeededRecording>() {
+        Ok(history) => match GameState::from_reconstructable_ruleset(&history) {
+            Ok(gamestate) => {
+                state.gamestate = gamestate;
+                state.message = String::new();
+                state.history = history;
+                if state.gamestate.score_max > state.hiscore {
+                    state.hiscore = state.gamestate.score_max;
+                }
+                state.message = String::from("Reverted move.");
             }
             Err(e) => {
                 state.message = format!("{:?}", e);

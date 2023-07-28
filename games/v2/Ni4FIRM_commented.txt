@@ -1,0 +1,16 @@
+::2:4:4:3146440594:Ni4FIRMjDBcVCwQTPiwdPys7CyAZNwsoMAQ6Izo1EzI
+------- STATS -------
+Score: 604
+RNG state: 267810457
+Breaks: 0
+Moves: 75
+Allowed moves: []
+Over: true
+Won: false
+------- BOARD -------
+2	64	2	16	
+16	32	16	8	
+8	16	8	2	
+2	8	2	4	
+
+---------------------

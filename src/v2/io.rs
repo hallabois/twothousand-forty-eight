@@ -183,22 +183,22 @@ mod tests {
 
     #[test]
     fn parse() {
-        let data = test_data::GAME_LS0T;
+        let data = test_data::GAME_NI4FIRM;
         data.parse::<SeededRecording>().unwrap();
     }
 
     #[test]
     fn comments() {
-        let data = test_data::GAME_LS0T_COMMENTED;
+        let data = test_data::GAME_NI4FIRM_COMMENTED;
         data.parse::<SeededRecording>().unwrap();
     }
 
     #[test]
     fn comments_hash() {
-        let data = test_data::GAME_LS0T_COMMENTED;
+        let data = test_data::GAME_NI4FIRM_COMMENTED;
         assert_eq!(
             data.parse::<SeededRecording>().unwrap().game_hash(),
-            test_data::GAME_LS0T_HASH
+            test_data::GAME_NI4FIRM_HASH
         );
     }
 }

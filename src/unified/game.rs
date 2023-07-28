@@ -37,9 +37,9 @@ impl GameState {
                 allowed_moves.push(direction);
             }
         }
-        let over = allowed_moves.is_empty();
+        let over = rules.game_over(&board);
         let allowed_to_break = crate::rules::can_break(rules, &board, score_current, breaks);
-        if allowed_to_break {
+        if !over && allowed_to_break {
             allowed_moves.push(Direction::BREAK);
         }
 

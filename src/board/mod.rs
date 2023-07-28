@@ -379,8 +379,6 @@ pub enum MoveError {
     NoValidMovesLeft,
     #[error("Move has no effect")]
     HasNoEffect,
-    #[error("Break not allowed")]
-    BreakNotAllowed,
 }
 
 /// Check if a move is possible in the direction "dir"

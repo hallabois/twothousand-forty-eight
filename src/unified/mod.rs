@@ -128,7 +128,7 @@ pub mod tests {
 
     #[test]
     fn validate_v2() {
-        let data = crate::v2::test_data::GAME_LS0T;
+        let data = crate::v2::test_data::GAME_NI4FIRM;
         assert!(super::validate(data).is_ok());
     }
 
@@ -140,7 +140,7 @@ pub mod tests {
 
     #[test]
     fn gamestate_v2() {
-        let data = crate::v2::test_data::GAME_LS0T;
+        let data = crate::v2::test_data::GAME_NI4FIRM;
         assert!(super::get_gamestate(data).is_ok());
     }
 }

@@ -98,13 +98,24 @@ impl Hashable for SeededRecording {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::{unified::hash::Hashable, v2::test_data::GAME_LS0T_HASH};
+    use crate::{
+        unified::hash::Hashable,
+        v2::test_data::{
+            GAME_NI4FIRM, GAME_NI4FIRM_HASH, GAME_WON_3_BREAKS, GAME_WON_3_BREAKS_HASH,
+        },
+    };
 
     use super::SeededRecording;
 
     #[test]
-    fn hash() {
-        let parsed: SeededRecording = crate::v2::test_data::GAME_LS0T.parse().unwrap();
-        assert_eq!(parsed.game_hash(), GAME_LS0T_HASH);
+    fn hash_a() {
+        let parsed: SeededRecording = GAME_NI4FIRM.parse().unwrap();
+        assert_eq!(parsed.game_hash(), GAME_NI4FIRM_HASH);
+    }
+
+    #[test]
+    fn hash_b() {
+        let parsed: SeededRecording = GAME_WON_3_BREAKS.parse().unwrap();
+        assert_eq!(parsed.game_hash(), GAME_WON_3_BREAKS_HASH);
     }
 }
