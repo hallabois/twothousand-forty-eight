@@ -56,6 +56,5 @@ lto = true
 opt-level = 3 # All optimizations
 
 [features]
-default = ["all"]
-all = ["wasm"]
+default = []
 wasm = ["wasm-bindgen", "getrandom", "tsify"]

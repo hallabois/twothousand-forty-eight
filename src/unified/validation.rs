@@ -2,8 +2,7 @@ pub const MAX_ALLOWED_BREAKS: usize = 3;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-#[cfg(feature = "wasm")]
-#[derive(tsify::Tsify)]
+#[cfg_attr(feature = "wasm", derive(tsify::Tsify))]
 #[cfg_attr(feature = "wasm", tsify(into_wasm_abi, from_wasm_abi))]
 pub struct ValidationResult {
     /// The maximum score reached during the run, 0 if the run is not valid

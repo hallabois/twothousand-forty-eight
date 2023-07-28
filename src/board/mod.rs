@@ -19,8 +19,7 @@ pub type Tiles = [[Option<Tile>; MAX_WIDTH]; MAX_HEIGHT];
 
 /// Holds game board data
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[cfg(feature = "wasm")]
-#[derive(tsify::Tsify)]
+#[cfg_attr(feature = "wasm", derive(tsify::Tsify))]
 #[cfg_attr(feature = "wasm", tsify(into_wasm_abi, from_wasm_abi))]
 pub struct Board {
     /// The width of the board. Value of 0 is untested
