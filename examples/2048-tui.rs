@@ -35,7 +35,7 @@ impl State {
         let history_string: String = (&self.history).into();
         let stats = format!(
             "------- STATS -------\nScore: {}\nRNG state: {}\nBreaks: {}\nMoves: {}\nAllowed moves: {:?}\nOver: {}\nWon: {}\n------- BOARD -------\n{}\n---------------------",
-            self.gamestate.score,
+            self.gamestate.score_max,
             self.gamestate.board.rng_state,
             self.gamestate.breaks,
             self.history.moves.len(),
@@ -62,7 +62,7 @@ impl State {
                 return Self::new(Some(&format!("Error reconstructing game: {:?}", e)));
             }
         };
-        let hiscore = gamestate.score;
+        let hiscore = gamestate.score_max;
         Self {
             history,
             message: format!("Loaded game from {path}"),
@@ -193,8 +193,8 @@ fn move_in_direction(state: &mut State, direction: twothousand_forty_eight::dire
                 state.gamestate = gamestate;
                 state.message = String::new();
                 state.history = history;
-                if state.gamestate.score > state.hiscore {
-                    state.hiscore = state.gamestate.score;
+                if state.gamestate.score_max > state.hiscore {
+                    state.hiscore = state.gamestate.score_max;
                 }
             }
             Err(e) => {
@@ -239,7 +239,7 @@ fn render_app(frame: &mut ratatui::Frame<CrosstermBackend<Stdout>>, state: &Stat
     frame.render_widget(title, chunks[0]);
     let score = Paragraph::new(format!(
         "Score: {}{}",
-        state.gamestate.score,
+        state.gamestate.score_max,
         if state
             .gamestate
             .allowed_moves

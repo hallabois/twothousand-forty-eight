@@ -14,7 +14,8 @@ use super::reconstruction::Reconstructable;
 #[cfg_attr(feature = "wasm", tsify(into_wasm_abi, from_wasm_abi))]
 pub struct GameState {
     pub board: Board,
-    pub score: usize,
+    pub score_current: usize,
+    pub score_max: usize,
     pub breaks: usize,
     pub allowed_moves: Vec<Direction>,
     pub over: bool,
@@ -26,7 +27,8 @@ impl GameState {
     ) -> Result<Self, T::ReconstructionError> {
         let rules = reconstruction.rules();
         let reconstruction = reconstruction.reconstruct()?;
-        let score = reconstruction.validation_data.score;
+        let score_current = reconstruction.validation_data.score_end;
+        let score_max = reconstruction.validation_data.score;
         let breaks = reconstruction.validation_data.breaks;
         let board = *reconstruction.history.last().unwrap();
         let mut allowed_moves = vec![];
@@ -36,7 +38,7 @@ impl GameState {
             }
         }
         let over = allowed_moves.is_empty();
-        let allowed_to_break = crate::rules::can_break(rules, &board, score, breaks);
+        let allowed_to_break = crate::rules::can_break(rules, &board, score_current, breaks);
         if allowed_to_break {
             allowed_moves.push(Direction::BREAK);
         }
@@ -44,7 +46,8 @@ impl GameState {
         let won = rules.won(&board);
         Ok(Self {
             board,
-            score,
+            score_max,
+            score_current,
             breaks,
             allowed_moves,
             over,
