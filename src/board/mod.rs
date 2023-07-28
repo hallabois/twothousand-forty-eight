@@ -10,9 +10,9 @@ use tile::Tile;
 use self::tile::InitialID;
 
 /// Max width of a board the program can handle. Be careful when increasing, as this increases memory use expotentially.
-pub const MAX_WIDTH: usize = 5;
+pub const MAX_WIDTH: usize = 6;
 /// Max height of a board the program can handle. Be careful when increasing, as this increases memory use expotentially.
-pub const MAX_HEIGHT: usize = 5;
+pub const MAX_HEIGHT: usize = 6;
 
 #[cfg_attr(feature = "wasm", tsify::declare)]
 pub type Tiles = [[Option<Tile>; MAX_WIDTH]; MAX_HEIGHT];
