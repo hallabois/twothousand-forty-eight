@@ -57,4 +57,5 @@ opt-level = 3 # All optimizations
 
 [features]
 default = []
+all = ["wasm"]
 wasm = ["wasm-bindgen", "getrandom", "tsify"]
