@@ -2,6 +2,7 @@
 //!
 //! This module is only available when the `wasm` feature is enabled
 
+use anyhow::Context;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
@@ -9,7 +10,10 @@ use crate::{
     board::Board,
     direction::Direction,
     unified::{
-        game::GameState, reconstruction::HistoryReconstruction, validation::ValidationResult,
+        game::GameState,
+        hash::Hashable,
+        reconstruction::{HistoryReconstruction, Reconstructable},
+        validation::ValidationResult,
         ParseResult,
     },
     v1::{recording::Recording, validator::initialize_board},
@@ -37,6 +41,14 @@ pub fn serialize(data: ParseResult) -> Result<String, JsValue> {
 #[wasm_bindgen]
 pub fn reconstruct(data: &str) -> Result<HistoryReconstruction, JsValue> {
     unified::reconstruct(data).map_err(err_str)
+}
+
+#[wasm_bindgen]
+pub fn reconstruct_recording(data: ParseResult) -> Result<HistoryReconstruction, JsValue> {
+    match data {
+        ParseResult::V1(rec) => Ok(rec.reconstruct().map_err(err_str)?),
+        ParseResult::V2(sedrec) => Ok(sedrec.reconstruct().map_err(err_str)?),
+    }
 }
 
 #[wasm_bindgen]
@@ -120,13 +132,26 @@ pub fn initial_board(size: usize, seed: u32, add_tiles: usize) -> Board {
 
 #[wasm_bindgen]
 pub fn new_game(size: usize, seed: Option<u32>) -> String {
-    let seed = seed.unwrap_or_else(|| rand::random());
+    let seed = seed.unwrap_or_else(rand::random);
     String::from(&SeededRecording::empty(seed, size, size))
 }
 
 #[wasm_bindgen]
 pub fn get_gamestate(data: &str) -> Result<GameState, JsValue> {
     unified::get_gamestate(data).map_err(err_str)
+}
+
+#[wasm_bindgen]
+pub fn get_gamestate_from_recording(data: ParseResult) -> Result<GameState, JsValue> {
+    match data {
+        ParseResult::V1(rec) => {
+            GameState::from_reconstructable_ruleset(&rec).context("failed to get gamestate")
+        }
+        ParseResult::V2(sedrec) => {
+            GameState::from_reconstructable_ruleset(&sedrec).context("failed to get gamestate")
+        }
+    }
+    .map_err(err_str)
 }
 
 #[wasm_bindgen]
@@ -151,6 +176,14 @@ pub fn add_random(board: Board) -> Board {
 #[wasm_bindgen]
 pub fn hash(data: &str) -> Result<String, JsValue> {
     unified::hash(data).map_err(err_str)
+}
+
+#[wasm_bindgen]
+pub fn hash_recording(data: ParseResult) -> String {
+    match data {
+        ParseResult::V1(rec) => rec.game_hash(),
+        ParseResult::V2(sedrec) => sedrec.game_hash(),
+    }
 }
 
 #[wasm_bindgen]
