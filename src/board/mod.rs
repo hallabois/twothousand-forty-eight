@@ -197,8 +197,15 @@ impl Default for Board {
 
 impl From<(Tiles, u32)> for Board {
     fn from((tiles, rng_state): (Tiles, u32)) -> Self {
-        let height = tiles.len();
-        let width = if height > 0 { tiles[0].len() } else { 0 };
+        let height = tiles
+            .iter()
+            .filter(|r| r.iter().flatten().count() > 0)
+            .count();
+        let width = if height > 0 {
+            tiles[0].iter().flatten().count()
+        } else {
+            0
+        };
         let largest_id = tiles
             .iter()
             .flatten()
@@ -508,6 +515,13 @@ mod tests {
                 seen_ids.insert(t.id);
             }
         }
+    }
+
+    #[test]
+    fn from_tuple() {
+        let board = Board::from(([[None; MAX_WIDTH]; MAX_HEIGHT], 0));
+        assert_eq!(board.width, 0);
+        assert_eq!(board.height, 0);
     }
 
     #[test]
